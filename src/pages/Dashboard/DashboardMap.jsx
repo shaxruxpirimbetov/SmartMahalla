@@ -4,6 +4,7 @@ import { Store, Tractor } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import { pointToLatLng, polygonToPositions } from '../../utils/geo';
 import { createLucideMarkerIcon, polygonCenter } from '../../utils/mapIcons';
+import { BusinessPopup, FarmPopup } from '../../components/MapPopups';
 
 // Nukus, Karakalpakstan - matches the region default ("Qoraqalpogʻiston")
 // used by the Rayon model in SmartMahalla_API_Hujjat.md §4.1. Every map in
@@ -170,11 +171,15 @@ function DashboardMap({
         return (
           <Fragment key={`farm-${farm.id}`}>
             <Polygon positions={positions} pathOptions={FARM_STYLE}>
-              <Popup className="cyber-popup">{farm.name}</Popup>
+              <Popup className="cyber-popup">
+                <FarmPopup farm={farm} />
+              </Popup>
             </Polygon>
             {center && (
               <Marker position={center} icon={farmerIcon}>
-                <Popup className="cyber-popup">{farm.name}</Popup>
+                <Popup className="cyber-popup">
+                  <FarmPopup farm={farm} />
+                </Popup>
               </Marker>
             )}
           </Fragment>
@@ -183,7 +188,9 @@ function DashboardMap({
 
       {businessPoints.map(({ business, position }) => (
         <Marker key={`biz-${business.id}`} position={position} icon={businessIcon}>
-          <Popup className="cyber-popup">{business.name}</Popup>
+          <Popup className="cyber-popup">
+            <BusinessPopup business={business} />
+          </Popup>
         </Marker>
       ))}
     </MapContainer>

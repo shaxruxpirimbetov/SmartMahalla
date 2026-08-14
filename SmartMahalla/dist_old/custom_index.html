@@ -1,0 +1,1931 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SmartMahalla — Qoraqalpog'iston Respublikasi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+    --bg:        #050e1f;
+    --bg2:       #081529;
+    --bg3:       #0b1c38;
+    --panel:     #0d2040;
+    --border:    rgba(0,210,255,0.18);
+    --border2:   rgba(0,210,255,0.08);
+    --cyan:      #00d2ff;
+    --cyan2:     #00a8cc;
+    --cyan-dim:  rgba(0,210,255,0.12);
+    --gold:      #ffc53d;
+    --gold2:     #e6a800;
+    --blue:      #1565f0;
+    --blue2:     #2196f3;
+    --green:     #00e676;
+    --green2:    #00c853;
+    --red:       #ff3d71;
+    --red2:      #d32f2f;
+    --orange:    #ff9f0a;
+    --purple:    #a855f7;
+    --text:      #cce8ff;
+    --text2:     #7ba8cc;
+    --text3:     #3a6080;
+    --glow-c:    0 0 12px rgba(0,210,255,0.4);
+    --glow-g:    0 0 12px rgba(255,197,61,0.4);
+    --sidebar-w: 200px;
+    --topbar-h:  48px;
+    --statsbar-h:76px;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+    font-family:'Source Sans 3',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    height:100vh;
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+}
+
+/* ── TOPBAR ── */
+.topbar {
+    height:var(--topbar-h);
+    background:var(--bg2);
+    border-bottom:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 16px;
+    flex-shrink:0;
+    position:relative;
+    z-index:200;
+}
+.topbar::after {
+    content:'';
+    position:absolute;
+    bottom:0; left:0; right:0;
+    height:1px;
+    background:linear-gradient(90deg,transparent,var(--cyan),var(--gold),var(--cyan),transparent);
+}
+.tb-left { display:flex; align-items:center; gap:10px; }
+.tb-logo {
+    width:32px; height:32px;
+    background:linear-gradient(135deg,var(--cyan),var(--blue));
+    border-radius:4px;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'Rajdhani',sans-serif;
+    font-weight:700; font-size:0.9rem; color:#fff;
+    box-shadow:var(--glow-c);
+}
+.tb-title-main {
+    font-family:'Rajdhani',sans-serif;
+    font-size:1.15rem; font-weight:700;
+    color:var(--cyan);
+    letter-spacing:1px;
+    text-shadow:var(--glow-c);
+}
+.tb-title-sub {
+    font-size:0.62rem; color:var(--text3);
+    letter-spacing:1.5px; text-transform:uppercase;
+    margin-left:2px;
+}
+.tb-title-wrap { display:flex; flex-direction:column; line-height:1.1; }
+.tb-center {
+    position:absolute; left:50%; transform:translateX(-50%);
+    font-family:'Rajdhani',sans-serif;
+    font-size:1rem; font-weight:600;
+    color:var(--gold);
+    letter-spacing:2px;
+    text-shadow:var(--glow-g);
+    white-space:nowrap;
+}
+.tb-right { display:flex; align-items:center; gap:12px; }
+.tb-clock {
+    text-align:right;
+    line-height:1.2;
+}
+.tb-clock .t { font-family:'Rajdhani',sans-serif; font-size:1.1rem; font-weight:700; color:var(--cyan); }
+.tb-clock .d { font-size:0.62rem; color:var(--text3); }
+.tb-user {
+    display:flex; align-items:center; gap:6px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:4px; padding:4px 10px;
+    cursor:pointer;
+}
+.tb-user .av {
+    width:22px; height:22px;
+    border-radius:50%;
+    background:linear-gradient(135deg,var(--cyan),var(--blue));
+    display:flex; align-items:center; justify-content:center;
+    font-size:0.65rem; font-weight:700; color:#fff;
+}
+.tb-user span { font-size:0.78rem; color:var(--text); }
+.tb-logout {
+    background:none; border:1px solid rgba(255,61,113,0.3);
+    color:var(--red); padding:4px 10px; border-radius:4px;
+    cursor:pointer; font-size:0.72rem;
+    transition:all 0.2s;
+}
+.tb-logout:hover { background:rgba(255,61,113,0.1); }
+
+/* ── STATS BAR ── */
+.statsbar {
+    height:var(--statsbar-h);
+    background:var(--bg2);
+    border-bottom:1px solid var(--border2);
+    display:flex;
+    align-items:stretch;
+    flex-shrink:0;
+    overflow:hidden;
+}
+.stat-block {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:6px 10px;
+    border-right:1px solid var(--border2);
+    position:relative;
+    cursor:default;
+    transition:background 0.2s;
+    gap:2px;
+}
+.stat-block:last-child { border-right:none; }
+.stat-block:hover { background:rgba(0,210,255,0.04); }
+.stat-block::before {
+    content:'';
+    position:absolute;
+    top:0; left:0; right:0;
+    height:2px;
+}
+.stat-block.c-cyan::before  { background:var(--cyan); box-shadow:0 0 8px var(--cyan); }
+.stat-block.c-gold::before  { background:var(--gold); box-shadow:0 0 8px var(--gold); }
+.stat-block.c-green::before { background:var(--green); box-shadow:0 0 8px var(--green); }
+.stat-block.c-red::before   { background:var(--red); box-shadow:0 0 8px var(--red); }
+.stat-block.c-blue::before  { background:var(--blue2); box-shadow:0 0 8px var(--blue2); }
+.stat-block.c-purple::before{ background:var(--purple); box-shadow:0 0 8px var(--purple); }
+.stat-block.c-orange::before{ background:var(--orange); box-shadow:0 0 8px var(--orange); }
+.stat-block.c-cyan2::before { background:var(--cyan2); box-shadow:0 0 8px var(--cyan2); }
+.stat-val {
+    font-family:'Rajdhani',sans-serif;
+    font-size:1.6rem; font-weight:700; line-height:1;
+}
+.stat-block.c-cyan  .stat-val { color:var(--cyan); }
+.stat-block.c-gold  .stat-val { color:var(--gold); }
+.stat-block.c-green .stat-val { color:var(--green); }
+.stat-block.c-red   .stat-val { color:var(--red); }
+.stat-block.c-blue  .stat-val { color:var(--blue2); }
+.stat-block.c-purple .stat-val { color:var(--purple); }
+.stat-block.c-orange .stat-val { color:var(--orange); }
+.stat-block.c-cyan2 .stat-val { color:var(--cyan2); }
+.stat-lbl {
+    font-size:0.6rem; color:var(--text3);
+    text-align:center; letter-spacing:0.8px;
+    text-transform:uppercase; line-height:1.2;
+}
+.stat-delta {
+    font-size:0.62rem; font-weight:600;
+    display:flex; align-items:center; gap:2px;
+}
+.stat-delta.up { color:var(--green); }
+.stat-delta.dn { color:var(--red); }
+
+/* ── LAYOUT ── */
+.layout {
+    display:flex;
+    flex:1;
+    overflow:hidden;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+    width:var(--sidebar-w);
+    background:var(--bg2);
+    border-right:1px solid var(--border);
+    display:flex;
+    flex-direction:column;
+    flex-shrink:0;
+    overflow-y:auto;
+}
+.nav-section {
+    font-size:0.55rem;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    color:var(--text3);
+    padding:12px 14px 4px;
+    font-weight:600;
+}
+.nav-item {
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding:8px 14px;
+    cursor:pointer;
+    transition:all 0.15s;
+    border-left:2px solid transparent;
+    font-size:0.8rem;
+    color:var(--text2);
+}
+.nav-item i { width:14px; text-align:center; font-size:0.75rem; }
+.nav-item:hover { color:var(--text); background:rgba(0,210,255,0.05); }
+.nav-item.active {
+    color:var(--cyan);
+    border-left-color:var(--cyan);
+    background:rgba(0,210,255,0.08);
+    font-weight:600;
+    text-shadow:0 0 8px rgba(0,210,255,0.5);
+}
+.nav-item.active i { color:var(--cyan); }
+.nav-div { height:1px; background:var(--border2); margin:4px 14px; }
+.sb-footer {
+    margin-top:auto;
+    padding:10px 14px;
+    border-top:1px solid var(--border2);
+    font-size:0.58rem;
+    color:var(--text3);
+    letter-spacing:0.5px;
+}
+
+/* ── CONTENT ── */
+.content {
+    flex:1;
+    overflow-y:auto;
+    display:flex;
+    flex-direction:column;
+    background:var(--bg);
+}
+
+/* ── PAGE ── */
+.page { display:none; flex:1; flex-direction:column; }
+.page.active { display:flex; }
+
+/* ── PANEL ── */
+.panel {
+    background:var(--bg2);
+    border:1px solid var(--border);
+    border-radius:4px;
+    overflow:hidden;
+}
+.panel-hdr {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:6px 10px;
+    border-bottom:1px solid var(--border2);
+    background:rgba(0,210,255,0.04);
+}
+.panel-title {
+    font-size:0.72rem; font-weight:600; color:var(--cyan);
+    display:flex; align-items:center; gap:6px;
+    letter-spacing:0.5px;
+}
+.panel-title i { font-size:0.68rem; }
+.panel-badge {
+    font-size:0.55rem; color:var(--cyan2);
+    background:rgba(0,210,255,0.1);
+    border:1px solid rgba(0,210,255,0.2);
+    padding:2px 6px; border-radius:3px;
+    letter-spacing:1px; text-transform:uppercase;
+    font-weight:600;
+}
+.panel-body { padding:8px; }
+
+/* ── DASHBOARD 3-COL LAYOUT ── */
+#page-dashboard .dash-grid {
+    display:grid;
+    grid-template-columns:220px 1fr 220px;
+    flex:1;
+    overflow:hidden;
+    gap:0;
+}
+.dash-col {
+    display:flex;
+    flex-direction:column;
+    overflow-y:auto;
+    padding:8px;
+    gap:8px;
+    border-right:1px solid var(--border2);
+}
+.dash-col:last-child { border-right:none; border-left:1px solid var(--border2); }
+.dash-center {
+    display:flex; flex-direction:column; gap:8px; padding:8px;
+    overflow:hidden;
+}
+
+/* ── MAP ── */
+.map-wrap {
+    position:relative;
+    flex:1;
+    border:1px solid var(--border);
+    border-radius:4px;
+    overflow:hidden;
+    min-height:280px;
+}
+#leaflet-map { height:100%; width:100%; }
+.map-legend {
+    position:absolute; bottom:10px; right:10px; z-index:500;
+    background:rgba(5,14,31,0.88);
+    border:1px solid var(--border);
+    border-radius:4px; padding:8px 10px;
+    font-size:0.68rem; color:var(--text2);
+}
+.map-legend .leg-item {
+    display:flex; align-items:center; gap:6px; margin:3px 0;
+}
+.map-legend .dot {
+    width:8px; height:8px; border-radius:50%;
+}
+.map-breadcrumb {
+    position:absolute; top:8px; left:8px; z-index:500;
+    background:rgba(5,14,31,0.88);
+    border:1px solid var(--border);
+    border-radius:4px; padding:4px 10px;
+    font-size:0.72rem; color:var(--text2);
+    display:flex; align-items:center; gap:6px;
+}
+.crumb-btn { color:var(--cyan); cursor:pointer; }
+.crumb-btn:hover { text-decoration:underline; }
+
+/* ── CHARTS ── */
+.chart-wrap { position:relative; width:100%; }
+
+/* ── TABLES ── */
+.dt { width:100%; border-collapse:collapse; font-size:0.72rem; }
+.dt th {
+    font-size:0.58rem; text-transform:uppercase; letter-spacing:1px;
+    color:var(--text3); padding:5px 8px; text-align:left;
+    border-bottom:1px solid var(--border2);
+    font-weight:600;
+}
+.dt td {
+    padding:6px 8px; color:var(--text);
+    border-bottom:1px solid rgba(0,210,255,0.04);
+    vertical-align:middle;
+}
+.dt tr:last-child td { border-bottom:none; }
+.dt tr.cl:hover td { background:rgba(0,210,255,0.06); cursor:pointer; }
+
+/* ── STATUS DOT ── */
+.sdot {
+    display:inline-block; width:6px; height:6px;
+    border-radius:50%; margin-right:5px;
+}
+.sdot.on  { background:var(--green); box-shadow:0 0 5px var(--green); }
+.sdot.off { background:var(--text3); }
+
+/* ── BADGE ── */
+.mbadge {
+    background:rgba(0,210,255,0.1);
+    color:var(--cyan2); font-size:0.6rem; font-weight:600;
+    padding:1px 6px; border-radius:10px;
+}
+
+/* ── PROGRESS ── */
+.prog-row { display:flex; align-items:center; gap:6px; margin:4px 0; }
+.prog-lbl { font-size:0.68rem; color:var(--text2); flex:1; min-width:0; }
+.prog-bar { height:3px; background:rgba(255,255,255,0.06); border-radius:2px; overflow:hidden; width:60px; }
+.prog-fill { height:100%; border-radius:2px; }
+.prog-val { font-size:0.68rem; font-weight:600; min-width:28px; text-align:right; }
+
+/* ── MINI STAT ── */
+.mini-stat {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:5px 0; border-bottom:1px solid var(--border2);
+}
+.mini-stat:last-child { border-bottom:none; }
+.mini-stat .k { font-size:0.68rem; color:var(--text2); }
+.mini-stat .v { font-size:0.72rem; font-weight:600; color:var(--text); }
+
+/* ── FULL PAGES (non-dashboard) ── */
+.page-inner { padding:12px; display:flex; flex-direction:column; gap:10px; }
+.page-hdr {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:8px 12px; border-bottom:1px solid var(--border2);
+    background:var(--bg2); flex-shrink:0;
+}
+.page-hdr h1 {
+    font-family:'Rajdhani',sans-serif;
+    font-size:1.1rem; font-weight:700; color:var(--cyan);
+    letter-spacing:1px;
+}
+.page-hdr .sub { font-size:0.65rem; color:var(--text3); margin-top:1px; }
+.header-actions { display:flex; gap:8px; align-items:center; }
+
+/* ── BUTTONS ── */
+.btn-p {
+    background:linear-gradient(135deg,rgba(0,210,255,0.2),rgba(21,101,240,0.2));
+    border:1px solid var(--cyan);
+    color:var(--cyan); padding:5px 12px; border-radius:3px;
+    font-size:0.72rem; font-weight:600; cursor:pointer;
+    transition:all 0.2s; display:flex; align-items:center; gap:5px;
+    font-family:'Source Sans 3',sans-serif;
+    letter-spacing:0.3px;
+}
+.btn-p:hover { background:rgba(0,210,255,0.25); box-shadow:0 0 10px rgba(0,210,255,0.3); }
+.btn-s {
+    background:var(--bg3); border:1px solid var(--border);
+    color:var(--text2); padding:5px 12px; border-radius:3px;
+    font-size:0.72rem; cursor:pointer; transition:all 0.2s;
+    font-family:'Source Sans 3',sans-serif;
+}
+.btn-s:hover { border-color:var(--cyan2); color:var(--cyan); }
+.back-btn {
+    display:flex; align-items:center; gap:5px;
+    background:var(--bg3); border:1px solid var(--border);
+    color:var(--text2); padding:4px 10px; border-radius:3px;
+    font-size:0.72rem; cursor:pointer; transition:all 0.2s;
+    font-family:'Source Sans 3',sans-serif;
+}
+.back-btn:hover { color:var(--cyan); border-color:var(--cyan); }
+
+/* ── KPI ROW ── */
+.kpi-row {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:8px;
+}
+.kpi-card {
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:4px; padding:10px 12px;
+    position:relative; overflow:hidden;
+}
+.kpi-card::before {
+    content:''; position:absolute; top:0; left:0; right:0; height:2px;
+}
+.kpi-card.c-cyan::before   { background:var(--cyan); }
+.kpi-card.c-gold::before   { background:var(--gold); }
+.kpi-card.c-green::before  { background:var(--green); }
+.kpi-card.c-red::before    { background:var(--red); }
+.kpi-card.c-blue::before   { background:var(--blue2); }
+.kpi-card.c-purple::before { background:var(--purple); }
+.kpi-icon {
+    font-size:0.85rem; margin-bottom:6px;
+    opacity:0.8;
+}
+.kpi-card.c-cyan   .kpi-icon { color:var(--cyan); }
+.kpi-card.c-gold   .kpi-icon { color:var(--gold); }
+.kpi-card.c-green  .kpi-icon { color:var(--green); }
+.kpi-card.c-red    .kpi-icon { color:var(--red); }
+.kpi-card.c-blue   .kpi-icon { color:var(--blue2); }
+.kpi-card.c-purple .kpi-icon { color:var(--purple); }
+.kpi-val {
+    font-family:'Rajdhani',sans-serif;
+    font-size:1.5rem; font-weight:700; line-height:1;
+    margin-bottom:2px;
+}
+.kpi-card.c-cyan   .kpi-val { color:var(--cyan); }
+.kpi-card.c-gold   .kpi-val { color:var(--gold); }
+.kpi-card.c-green  .kpi-val { color:var(--green); }
+.kpi-card.c-red    .kpi-val { color:var(--red); }
+.kpi-card.c-blue   .kpi-val { color:var(--blue2); }
+.kpi-card.c-purple .kpi-val { color:var(--purple); }
+.kpi-lbl { font-size:0.62rem; color:var(--text3); }
+
+/* ── MAHALLA GRID ── */
+.mahalla-grid {
+    display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+}
+.m-card {
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:4px; padding:10px 12px;
+    cursor:pointer; transition:all 0.18s;
+}
+.m-card:hover { border-color:var(--cyan); background:rgba(0,210,255,0.05); }
+.m-card .name { font-size:0.82rem; font-weight:600; color:var(--text); margin-bottom:3px; }
+.m-card .rtag { font-size:0.62rem; color:var(--text3); }
+.m-card .m-stats { display:flex; gap:10px; margin-top:8px; }
+.m-card .ms { display:flex; flex-direction:column; }
+.m-card .ms .v { font-family:'Rajdhani',sans-serif; font-size:1.1rem; font-weight:700; color:var(--cyan); }
+.m-card .ms .l { font-size:0.58rem; color:var(--text3); }
+
+/* ── SEARCH ── */
+.search-wrap { position:relative; }
+.search-wrap i { position:absolute; left:8px; top:50%; transform:translateY(-50%); color:var(--text3); font-size:0.7rem; }
+.search-wrap input {
+    background:var(--bg3); border:1px solid var(--border);
+    border-radius:3px; padding:5px 10px 5px 24px;
+    color:var(--text); font-size:0.75rem;
+    font-family:'Source Sans 3',sans-serif;
+    width:160px; transition:border-color 0.2s;
+}
+.search-wrap input:focus { outline:none; border-color:var(--cyan2); }
+.search-wrap input::placeholder { color:var(--text3); }
+
+/* ── MODAL ── */
+.modal-overlay {
+    display:none; position:fixed; inset:0;
+    background:rgba(0,0,0,0.75); z-index:500;
+    align-items:center; justify-content:center;
+}
+.modal-overlay.open { display:flex; }
+.modal {
+    background:var(--bg2); border:1px solid var(--border);
+    border-radius:6px; width:420px; padding:20px;
+    max-height:90vh; overflow-y:auto;
+}
+.modal h2 {
+    font-family:'Rajdhani',sans-serif; font-size:1rem;
+    color:var(--cyan); margin-bottom:14px; letter-spacing:1px;
+}
+.fg { margin-bottom:12px; }
+.fg label { display:block; font-size:0.62rem; color:var(--text3); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.8px; }
+.fg input, .fg select, .fg textarea {
+    width:100%; background:var(--bg3); border:1px solid var(--border);
+    border-radius:3px; padding:7px 10px; color:var(--text);
+    font-family:'Source Sans 3',sans-serif; font-size:0.82rem;
+    transition:border-color 0.2s;
+}
+.fg input:focus, .fg select:focus, .fg textarea:focus { outline:none; border-color:var(--cyan2); }
+.fg select option { background:var(--bg2); }
+.modal-footer { display:flex; gap:8px; justify-content:flex-end; margin-top:16px; }
+
+/* ── LOADING ── */
+.loading { display:flex; align-items:center; gap:8px; color:var(--text3); font-size:0.78rem; padding:12px; }
+.spinner {
+    width:14px; height:14px;
+    border:2px solid var(--border); border-top-color:var(--cyan);
+    border-radius:50%; animation:spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── NOTICE ── */
+.notice {
+    display:flex; align-items:center; gap:8px;
+    background:rgba(255,197,61,0.06); border:1px solid rgba(255,197,61,0.2);
+    border-radius:4px; padding:8px 12px; font-size:0.75rem; color:var(--text2);
+}
+.notice i { color:var(--gold); flex-shrink:0; }
+
+/* ── AI PAGE ── */
+.ai-select-row {
+    display:flex; align-items:center; gap:10px;
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:4px; padding:10px 14px; flex-wrap:wrap;
+}
+.ai-select-row label { font-size:0.75rem; color:var(--text2); white-space:nowrap; }
+.ai-select-row select {
+    background:var(--bg3); border:1px solid var(--border);
+    color:var(--text); padding:5px 10px; border-radius:3px;
+    font-family:'Source Sans 3',sans-serif; font-size:0.8rem; flex:1; min-width:180px;
+}
+.ai-select-row select:focus { outline:none; border-color:var(--cyan2); }
+.ai-ctx-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+.ai-ctx-card {
+    background:var(--panel); border:1px solid var(--border);
+    border-radius:4px; padding:10px 12px;
+}
+.ai-ctx-card .l { font-size:0.58rem; color:var(--text3); text-transform:uppercase; letter-spacing:1px; margin-bottom:4px; }
+.ai-ctx-card .v { font-family:'Rajdhani',sans-serif; font-size:1.3rem; font-weight:700; color:var(--cyan); }
+.ai-ctx-card .s { font-size:0.62rem; color:var(--text3); margin-top:2px; }
+.ai-biz-list { display:flex; flex-direction:column; gap:8px; }
+.ai-biz {
+    background:var(--bg3); border:1px solid var(--border);
+    border-radius:4px; padding:12px;
+}
+.ai-biz .bt { font-size:0.85rem; font-weight:600; color:var(--gold); margin-bottom:5px; display:flex; align-items:center; gap:6px; }
+.ai-biz .bd { font-size:0.77rem; color:var(--text2); line-height:1.5; margin-bottom:6px; }
+.ai-biz .tags { display:flex; gap:5px; flex-wrap:wrap; }
+.biz-tag { font-size:0.62rem; padding:2px 7px; border-radius:10px; font-weight:600; }
+.biz-tag.def  { background:rgba(0,210,255,0.1); color:var(--cyan2); }
+.biz-tag.low  { background:rgba(0,230,118,0.1); color:var(--green); }
+.biz-tag.mid  { background:rgba(255,159,10,0.1); color:var(--orange); }
+.biz-tag.high { background:rgba(255,61,113,0.1); color:var(--red); }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+
+/* ── DETAIL PAGES (mahalla, rayon) ── */
+.detail-hdr { display:flex; align-items:center; gap:8px; }
+.stat-list-v { display:flex; flex-direction:column; }
+.sl-row {
+    display:flex; align-items:center; gap:8px;
+    padding:5px 0; border-bottom:1px solid var(--border2);
+    font-size:0.75rem;
+}
+.sl-row:last-child { border-bottom:none; }
+.sl-row .k { color:var(--text2); flex:1; }
+.sl-row .v { color:var(--text); font-weight:600; }
+
+/* ── MAP FULL PAGE ── */
+#map-full-wrap {
+    position:relative; flex:1; margin:8px; min-height:0;
+    border:1px solid var(--border); border-radius:4px; overflow:hidden;
+}
+#leaflet-map-full { height:100%; width:100%; }
+.map-info-panel {
+    position:absolute; top:8px; right:8px; z-index:500;
+    background:rgba(5,14,31,0.92); border:1px solid var(--border);
+    border-radius:4px; padding:12px; width:220px;
+}
+.map-info-panel h3 { font-family:'Rajdhani',sans-serif; font-size:0.95rem; color:var(--gold); margin-bottom:8px; }
+.map-stat-item { display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid var(--border2); font-size:0.72rem; }
+.map-stat-item:last-child { border-bottom:none; }
+.map-stat-item .k { color:var(--text3); }
+.map-stat-item .v { color:var(--text); font-weight:600; }
+
+/* ── RESPONSIVE ── */
+@media (max-width:1300px) {
+    #page-dashboard .dash-grid {
+        grid-template-columns:200px 1fr 200px;
+    }
+}
+@media (max-width:1100px) {
+    .statsbar { overflow-x:auto; }
+    .stat-block { min-width:90px; }
+    #page-dashboard .dash-grid {
+        grid-template-columns:1fr;
+        grid-template-rows:auto 1fr auto;
+    }
+    .dash-col:last-child { border-left:none; border-top:1px solid var(--border2); }
+}
+</style>
+</head>
+<body>
+
+<!-- ── TOPBAR ── -->
+<div class="topbar">
+    <div class="tb-left">
+        <div class="tb-logo">SM</div>
+        <div class="tb-title-wrap">
+            <span class="tb-title-main">SmartMahalla</span>
+            <span class="tb-title-sub">Analitika tizimi</span>
+        </div>
+    </div>
+    <div class="tb-center">
+        Qoraqalpog'iston Respublikasi — Hududiy boshqaruv platformasi
+    </div>
+    <div class="tb-right">
+        <div class="tb-clock">
+            <div class="t" id="clock-time">--:--:--</div>
+            <div class="d" id="clock-date">-- --- 2026</div>
+        </div>
+        <div class="tb-user">
+            <div class="av" id="user-avatar">?</div>
+            <span id="user-name">Admin</span>
+        </div>
+        <button class="tb-logout" onclick="logout()"><i class="fas fa-sign-out-alt"></i></button>
+    </div>
+</div>
+
+<!-- ── STATS BAR ── -->
+<div class="statsbar" id="statsbar">
+    <div class="stat-block c-cyan">
+        <div class="stat-val" id="sb-rayons">—</div>
+        <div class="stat-lbl">Rayonlar<br>soni</div>
+    </div>
+    <div class="stat-block c-gold">
+        <div class="stat-val" id="sb-mahallas">—</div>
+        <div class="stat-lbl">Mahallalar<br>soni</div>
+    </div>
+    <div class="stat-block c-blue">
+        <div class="stat-val" id="sb-population">—</div>
+        <div class="stat-lbl">Jami aholi<br>(ming)</div>
+    </div>
+    <div class="stat-block c-green">
+        <div class="stat-val" id="sb-employed">—</div>
+        <div class="stat-lbl">Band aholi<br>(ming)</div>
+    </div>
+    <div class="stat-block c-red">
+        <div class="stat-val" id="sb-unemp">—</div>
+        <div class="stat-lbl">Ishsizlar<br>soni</div>
+    </div>
+    <div class="stat-block c-orange">
+        <div class="stat-val" id="sb-poor">—</div>
+        <div class="stat-lbl">Kambag'al<br>oilalar</div>
+    </div>
+    <div class="stat-block c-purple">
+        <div class="stat-val" id="sb-hh">—</div>
+        <div class="stat-lbl">Uy-xonadon<br>soni</div>
+    </div>
+    <div class="stat-block c-cyan2">
+        <div class="stat-val" id="sb-water">—</div>
+        <div class="stat-lbl">Toza suv<br>(%)</div>
+    </div>
+</div>
+
+<!-- ── LAYOUT ── -->
+<div class="layout">
+
+<!-- ── SIDEBAR ── -->
+<div class="sidebar">
+    <div class="nav-section">Asosiy</div>
+    <div class="nav-item active" onclick="showPage('dashboard')">
+        <i class="fas fa-tachometer-alt"></i> Bosh sahifa
+    </div>
+    <div class="nav-item" onclick="showPage('rayons')">
+        <i class="fas fa-map-marked-alt"></i> Rayonlar
+    </div>
+    <div class="nav-item" onclick="showPage('mahallas')">
+        <i class="fas fa-city"></i> Mahallalar
+    </div>
+    <div class="nav-div"></div>
+    <div class="nav-section">Ma'lumotlar</div>
+<!--    <div class="nav-item" onclick="showPage('population')">-->
+<!--        <i class="fas fa-users"></i> Aholi-->
+<!--    </div>-->
+<!--    <div class="nav-item" onclick="showPage('infra')">-->
+<!--        <i class="fas fa-road"></i> Infratuzilma-->
+<!--    </div>-->
+    <div class="nav-item" onclick="showPage('map')">
+        <i class="fas fa-globe-asia"></i> Xarita
+    </div>
+    <div class="nav-div"></div>
+    <div class="nav-section">Intellekt</div>
+    <div class="nav-item" onclick="showPage('ai')">
+        <i class="fas fa-robot"></i> AI Maslahatchi
+    </div>
+    <div class="sb-footer">SmartMahalla v2.0 · 2026</div>
+</div>
+
+<!-- ── CONTENT ── -->
+<div class="content" id="content-area">
+
+<!-- ═══ DASHBOARD ═══ -->
+<div class="page active" id="page-dashboard">
+
+    <!-- top notice -->
+    <div id="api-notice" class="notice" style="display:none;margin:8px 8px 0;">
+        <i class="fas fa-info-circle"></i>
+        API ga ulanib bo'lmadi (localhost:8000). Demo ma'lumotlar ko'rsatilmoqda.
+    </div>
+
+    <!-- 3-col grid -->
+    <div class="dash-grid">
+
+        <!-- LEFT COL -->
+        <div class="dash-col">
+
+            <!-- Rayonlar ro'yxati -->
+            <div class="panel">
+                <div class="panel-hdr">
+                    <div class="panel-title"><i class="fas fa-map-marked-alt"></i> Rayonlar</div>
+                    <button class="btn-p" style="padding:2px 8px;font-size:0.62rem;" onclick="openAddRayonModal()"><i class="fas fa-plus"></i></button>
+                </div>
+                <div class="panel-body" style="padding:0;">
+                    <div id="dash-rayons-list">
+                        <div class="loading"><div class="spinner"></div> Yuklanmoqda...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Faollik -->
+            <div class="panel">
+                <div class="panel-hdr">
+                    <div class="panel-title"><i class="fas fa-chart-pie"></i> Faollik holati</div>
+                    <span class="panel-badge">JONLI</span>
+                </div>
+                <div class="panel-body">
+                    <div class="chart-wrap" style="height:110px;">
+                        <canvas id="chart-pie" role="img" aria-label="Faol va nofaol mahallalar ulushi">Ma'lumot yuklanmoqda</canvas>
+                    </div>
+                    <div id="pie-stats" style="margin-top:6px;"></div>
+                </div>
+            </div>
+
+            <!-- Tez statistika -->
+            <div class="panel">
+                <div class="panel-hdr">
+                    <div class="panel-title"><i class="fas fa-info-circle"></i> Ijtimoiy ko'rsatkichlar</div>
+                </div>
+                <div class="panel-body">
+                    <div id="social-stats"></div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- CENTER -->
+        <div class="dash-center">
+
+            <!-- Map -->
+            <div class="map-wrap" style="flex:1;">
+                <div id="leaflet-map"></div>
+                <div class="map-breadcrumb" id="dash-breadcrumb">
+                    <span class="crumb-btn" onclick="mapGoBack()">Rayonlar</span>
+                    <span id="dash-crumb-rayon" style="display:none">
+                        <span style="color:var(--text3)"> › </span>
+                        <span id="dash-crumb-rname" style="color:var(--text2)"></span>
+                    </span>
+                </div>
+                <div class="map-legend">
+                    <div class="leg-item"><div class="dot" style="background:var(--cyan)"></div>Faol rayon</div>
+                    <div class="leg-item"><div class="dot" style="background:var(--gold)"></div>Faol mahalla</div>
+                    <div class="leg-item"><div class="dot" style="background:var(--text3)"></div>Nofaol</div>
+                </div>
+            </div>
+
+            <!-- Bottom: bar chart -->
+            <div class="panel" style="flex-shrink:0;">
+                <div class="panel-hdr">
+                    <div class="panel-title"><i class="fas fa-chart-bar"></i> Rayonlar bo'yicha mahallalar soni</div>
+                    <span class="panel-badge">API</span>
+                </div>
+                <div class="panel-body">
+                    <div class="chart-wrap" style="height:110px;">
+                        <canvas id="chart-bar" role="img" aria-label="Rayonlar bo'yicha mahallalar soni">Ma'lumot yuklanmoqda</canvas>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT COL -->
+        <div class="dash-col">
+
+            <!-- Infratuzilma stats -->
+            <div class="panel">
+                <div class="panel-hdr">
+                    <div class="panel-title"><i class="fas fa-road"></i> Infratuzilma</div>
+                </div>
+                <div class="panel-body">
+                    <div id="infra-mini"></div>
+                </div>
+            </div>
+
+            <!-- Bandlik chart -->
+            <div class="panel">
+                <div class="panel-hdr">
+                    <div class="panel-title"><i class="fas fa-chart-area"></i> Bandlik</div>
+                </div>
+                <div class="panel-body">
+                    <div class="chart-wrap" style="height:120px;">
+                        <canvas id="chart-employ" role="img" aria-label="Bandlik ko'rsatkichlari">Ma'lumot yuklanmoqda</canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- So'ngi mahallalar -->
+            <div class="panel">
+                <div class="panel-hdr">
+                    <div class="panel-title"><i class="fas fa-city"></i> Mahallalar</div>
+                    <button class="btn-p" style="padding:2px 8px;font-size:0.62rem;" onclick="openAddMahallaModal()"><i class="fas fa-plus"></i></button>
+                </div>
+                <div class="panel-body" style="padding:0;">
+                    <div id="dash-mahallas-list">
+                        <div class="loading"><div class="spinner"></div> Yuklanmoqda...</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- ═══ RAYONS ═══ -->
+<div class="page" id="page-rayons">
+    <div class="page-hdr">
+        <div>
+            <h1><i class="fas fa-map-marked-alt" style="font-size:0.9rem;margin-right:6px;"></i>Rayonlar</h1>
+            <div class="sub">Qoraqalpog'iston Respublikasi hududiy bo'linmalar</div>
+        </div>
+        <div class="header-actions">
+            <button class="btn-p" onclick="openAddRayonModal()"><i class="fas fa-plus"></i> Yangi Rayon</button>
+        </div>
+    </div>
+    <div class="page-inner">
+        <div class="panel">
+            <div class="panel-hdr">
+                <div class="panel-title"><i class="fas fa-list"></i> Barcha rayonlar</div>
+                <span class="panel-badge" id="rayon-count-badge">—</span>
+            </div>
+            <div class="panel-body" style="padding:0;">
+                <div id="rayons-full-table"><div class="loading"><div class="spinner"></div></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ RAYON DETAIL ═══ -->
+<div class="page" id="page-rayon-detail">
+    <div class="page-hdr">
+        <div>
+            <div class="detail-hdr">
+                <button class="back-btn" onclick="showPage('rayons')"><i class="fas fa-arrow-left"></i> Orqaga</button>
+                <h1 id="rayon-detail-name">Rayon</h1>
+            </div>
+            <div class="sub" id="rayon-detail-sub"></div>
+        </div>
+    </div>
+    <div class="page-inner">
+        <div class="kpi-row">
+            <div class="kpi-card c-gold"><div class="kpi-icon"><i class="fas fa-city"></i></div><div class="kpi-val" id="rd-mahallas">—</div><div class="kpi-lbl">Mahallalar</div></div>
+            <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-users"></i></div><div class="kpi-val" id="rd-pop">—</div><div class="kpi-lbl">Aholi soni</div></div>
+            <div class="kpi-card c-red"><div class="kpi-icon"><i class="fas fa-briefcase"></i></div><div class="kpi-val" id="rd-unemp">—</div><div class="kpi-lbl">Ishsizlar</div></div>
+            <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-home"></i></div><div class="kpi-val" id="rd-hh">—</div><div class="kpi-lbl">Honadonlar</div></div>
+        </div>
+        <div class="panel">
+            <div class="panel-hdr">
+                <div class="panel-title"><i class="fas fa-city"></i> Mahallalar</div>
+                <span class="panel-badge" id="rd-mahalla-badge">—</span>
+            </div>
+            <div class="panel-body" style="padding:0;">
+                <div id="rayon-detail-mahallas"><div class="loading"><div class="spinner"></div></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MAHALLAS ═══ -->
+<div class="page" id="page-mahallas">
+    <div class="page-hdr">
+        <div>
+            <h1><i class="fas fa-city" style="font-size:0.9rem;margin-right:6px;"></i>Mahallalar</h1>
+            <div class="sub">Barcha mahallalar ro'yxati</div>
+        </div>
+        <div class="header-actions">
+            <div class="search-wrap"><i class="fas fa-search"></i><input type="text" placeholder="Qidirish..." id="mahalla-search" oninput="filterMahallas(this.value)"></div>
+            <button class="btn-p" onclick="openAddMahallaModal()"><i class="fas fa-plus"></i> Yangi Mahalla</button>
+        </div>
+    </div>
+    <div class="page-inner">
+        <div id="mahallas-grid" class="mahalla-grid">
+            <div class="loading"><div class="spinner"></div> Mahallalar yuklanmoqda...</div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MAHALLA DETAIL ═══ -->
+<div class="page" id="page-mahalla-detail">
+    <div class="page-hdr">
+        <div>
+            <div class="detail-hdr">
+                <button class="back-btn" id="mahalla-back-btn" onclick="showPage('mahallas')"><i class="fas fa-arrow-left"></i> Orqaga</button>
+                <h1 id="mahalla-detail-name">Mahalla</h1>
+            </div>
+            <div class="sub" id="mahalla-detail-sub"></div>
+        </div>
+        <button class="btn-p" onclick="openAIForMahalla()"><i class="fas fa-robot"></i> AI Maslahat</button>
+    </div>
+    <div class="page-inner">
+        <div class="kpi-row">
+            <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-users"></i></div><div class="kpi-val" id="md-pop">—</div><div class="kpi-lbl">Aholi soni</div></div>
+            <div class="kpi-card c-red"><div class="kpi-icon"><i class="fas fa-briefcase"></i></div><div class="kpi-val" id="md-unemp">—</div><div class="kpi-lbl">Ishsizlar</div></div>
+            <div class="kpi-card c-gold"><div class="kpi-icon"><i class="fas fa-home"></i></div><div class="kpi-val" id="md-hh">—</div><div class="kpi-lbl">Honadonlar</div></div>
+            <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-coins"></i></div><div class="kpi-val" id="md-salary">—</div><div class="kpi-lbl">O'rtacha maosh</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="panel">
+                <div class="panel-hdr"><div class="panel-title"><i class="fas fa-users"></i> Aholi va bandlik</div></div>
+                <div class="panel-body"><div id="md-avb"></div></div>
+            </div>
+            <div class="panel">
+                <div class="panel-hdr"><div class="panel-title"><i class="fas fa-road"></i> Infratuzilma</div></div>
+                <div class="panel-body"><div id="md-infra"></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ POPULATION ═══ -->
+<div class="page" id="page-population">
+    <div class="page-hdr">
+        <div>
+            <h1><i class="fas fa-users" style="font-size:0.9rem;margin-right:6px;"></i>Aholi va Bandlik</h1>
+            <div class="sub">Demografik ko'rsatkichlar</div>
+        </div>
+    </div>
+    <div class="page-inner">
+        <div class="kpi-row">
+            <div class="kpi-card c-blue"><div class="kpi-icon"><i class="fas fa-user-friends"></i></div><div class="kpi-val" id="pop-total">—</div><div class="kpi-lbl">Jami aholi</div></div>
+            <div class="kpi-card c-gold"><div class="kpi-icon"><i class="fas fa-home"></i></div><div class="kpi-val" id="pop-hh">—</div><div class="kpi-lbl">Honadonlar</div></div>
+            <div class="kpi-card c-red"><div class="kpi-icon"><i class="fas fa-exclamation-triangle"></i></div><div class="kpi-val" id="pop-poor">—</div><div class="kpi-lbl">Kambag'al oilalar</div></div>
+            <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-briefcase"></i></div><div class="kpi-val" id="pop-emp">—</div><div class="kpi-lbl">Band aholi</div></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div class="panel">
+                <div class="panel-hdr"><div class="panel-title"><i class="fas fa-chart-area"></i> Bandlik ko'rsatkichlari</div></div>
+                <div class="panel-body"><div class="chart-wrap" style="height:220px;"><canvas id="chart-pop-employ" role="img" aria-label="Bandlik">Ma'lumot yuklanmoqda</canvas></div></div>
+            </div>
+            <div class="panel">
+                <div class="panel-hdr"><div class="panel-title"><i class="fas fa-chart-bar"></i> Ijtimoiy himoya</div></div>
+                <div class="panel-body"><div class="chart-wrap" style="height:220px;"><canvas id="chart-pop-social" role="img" aria-label="Ijtimoiy himoya">Ma'lumot yuklanmoqda</canvas></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ INFRA ═══ -->
+<div class="page" id="page-infra">
+    <div class="page-hdr">
+        <div>
+            <h1><i class="fas fa-road" style="font-size:0.9rem;margin-right:6px;"></i>Infratuzilma</h1>
+            <div class="sub">Muhandislik kommunikatsiyalari holati</div>
+        </div>
+    </div>
+    <div class="page-inner">
+        <div class="kpi-row">
+            <div class="kpi-card c-gold"><div class="kpi-icon"><i class="fas fa-road"></i></div><div class="kpi-val" id="inf-roads">—</div><div class="kpi-lbl">Yo'llar (km)</div></div>
+            <div class="kpi-card c-cyan"><div class="kpi-icon"><i class="fas fa-water"></i></div><div class="kpi-val" id="inf-water">—</div><div class="kpi-lbl">Toza suv (%)</div></div>
+            <div class="kpi-card c-green"><div class="kpi-icon"><i class="fas fa-fire"></i></div><div class="kpi-val" id="inf-gas">—</div><div class="kpi-lbl">Gaz (%)</div></div>
+            <div class="kpi-card c-red"><div class="kpi-icon"><i class="fas fa-bolt"></i></div><div class="kpi-val" id="inf-power">—</div><div class="kpi-lbl">Elektr uzilishlari</div></div>
+        </div>
+        <div class="panel">
+            <div class="panel-hdr"><div class="panel-title"><i class="fas fa-chart-bar"></i> Infratuzilma (mahallalar bo'yicha)</div></div>
+            <div class="panel-body"><div class="chart-wrap" style="height:280px;"><canvas id="chart-infra-full" role="img" aria-label="Infratuzilma">Ma'lumot yuklanmoqda</canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ MAP (full) ═══ -->
+<div class="page" id="page-map">
+    <div class="page-hdr">
+        <div>
+            <h1><i class="fas fa-globe-asia" style="font-size:0.9rem;margin-right:6px;"></i>Hududiy Xarita</h1>
+            <div class="sub" id="map-page-sub">Qoraqalpog'iston rayonlari</div>
+        </div>
+        <button class="back-btn" id="map-back-btn" onclick="mapGoBack2()" style="display:none"><i class="fas fa-arrow-left"></i> Rayonlarga qaytish</button>
+    </div>
+    <div id="map-full-wrap">
+        <div id="leaflet-map-full"></div>
+        <div class="map-breadcrumb" id="map-breadcrumb2">
+            <span class="crumb-btn" onclick="mapGoBack2()">Rayonlar</span>
+            <span id="map-crumb-r" style="display:none">
+                <span style="color:var(--text3)"> › </span>
+                <span id="map-crumb-rname" style="color:var(--text2)"></span>
+            </span>
+        </div>
+        <div class="map-info-panel" id="map-info-panel" style="display:none;">
+            <h3 id="map-info-title">—</h3>
+            <div id="map-info-content"></div>
+            <button class="btn-p" style="width:100%;justify-content:center;margin-top:10px;" onclick="mapOpenDetail()">
+                <i class="fas fa-chart-bar"></i> Batafsil
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ AI ═══ -->
+<div class="page" id="page-ai">
+    <div class="page-hdr">
+        <div>
+            <h1><i class="fas fa-robot" style="font-size:0.9rem;margin-right:6px;color:var(--gold);"></i>AI Maslahatchi</h1>
+            <div class="sub">Sun'iy intellekt yordamida mahalla tahlili</div>
+        </div>
+    </div>
+    <div class="page-inner">
+        <div class="ai-select-row">
+            <label><i class="fas fa-city" style="margin-right:5px;color:var(--cyan);"></i> Mahalla:</label>
+            <select id="ai-mahalla-sel" onchange="onAIMahallaChange()">
+                <option value="">— Tanlang —</option>
+            </select>
+            <button class="btn-p" onclick="runAI()"><i class="fas fa-magic"></i> Tahlil</button>
+        </div>
+
+<!--        <div id="ai-ctx-row" class="ai-ctx-grid" style="display:none;">-->
+<!--            <div class="ai-ctx-card"><div class="l">Aholi soni</div><div class="v" id="ai-ctx-pop">—</div><div class="s" id="ai-ctx-pop-s">—</div></div>-->
+<!--            <div class="ai-ctx-card"><div class="l">Ishsizlik</div><div class="v" id="ai-ctx-unemp">—</div><div class="s" id="ai-ctx-unemp-s">—</div></div>-->
+<!--            <div class="ai-ctx-card"><div class="l">O'rtacha maosh</div><div class="v" id="ai-ctx-sal">—</div><div class="s">oylik so'm</div></div>-->
+<!--            <div class="ai-ctx-card"><div class="l">Kambag'al oilalar</div><div class="v" id="ai-ctx-poor">—</div><div class="s" id="ai-ctx-poor-s">—</div></div>-->
+<!--        </div>-->
+
+        <div class="panel" id="ai-advice-panel" style="display:none;">
+            <div class="panel-hdr">
+                <div class="panel-title"><i class="fas fa-lightbulb"></i> AI Biznes Tavsiyalari</div>
+                <span class="panel-badge" style="color:var(--gold);background:rgba(255,197,61,0.1);border-color:rgba(255,197,61,0.2);">CLAUDE AI</span>
+            </div>
+            <div class="panel-body" id="ai-advice-body">
+                <div class="loading"><div class="spinner"></div> AI tahlil qilmoqda...</div>
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-hdr"><div class="panel-title"><i class="fas fa-info-circle"></i> AI haqida</div></div>
+            <div class="panel-body">
+                <p style="font-size:0.8rem;color:var(--text2);line-height:1.6;">
+                    AI Maslahatchi mahallaning iqtisodiy, demografik va infratuzilma ma'lumotlarini tahlil qilib,
+                    <span style="color:var(--gold);">qaysi biznes yo'nalishlari muvaffaqiyatli bo'lishi mumkinligini</span> baholaydi.
+                    Tavsiyalar aholi zichligi, ishsizlik darajasi, o'rtacha daromad va infratuzilma holatini hisobga oladi.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div><!-- /content-area -->
+</div><!-- /layout -->
+
+<!-- ═══ MODALS ═══ -->
+<div class="modal-overlay" id="modal-add-rayon">
+    <div class="modal">
+        <h2><i class="fas fa-map-marked-alt"></i> Yangi Rayon qo'shish</h2>
+        <div class="fg"><label>Rayon nomi</label><input type="text" id="inp-rayon-name" placeholder="Masalan: Nukus tumani"></div>
+        <div class="fg"><label>Viloyat</label><input type="text" id="inp-rayon-region" value="Qoraqalpog'iston"></div>
+        <div class="modal-footer">
+            <button class="btn-s" onclick="closeModal('modal-add-rayon')">Bekor</button>
+            <button class="btn-p" onclick="submitAddRayon()"><i class="fas fa-map"></i> Xaritada belgilash</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modal-add-mahalla">
+    <div class="modal">
+        <h2><i class="fas fa-city"></i> Yangi Mahalla qo'shish</h2>
+        <div class="fg"><label>Rayon</label><select id="inp-mahalla-rayon"></select></div>
+        <div class="fg"><label>Mahalla nomi</label><input type="text" id="inp-mahalla-name" placeholder="Mahalla nomi"></div>
+        <div class="fg"><label>Tavsif</label><textarea id="inp-mahalla-desc" rows="3" placeholder="Qisqacha tavsif..."></textarea></div>
+        <div class="modal-footer">
+            <button class="btn-s" onclick="closeModal('modal-add-mahalla')">Bekor</button>
+            <button class="btn-p" onclick="submitAddMahalla()"><i class="fas fa-map"></i> Xaritada belgilash</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+<script>
+/* ════════════════════════
+   CONFIG
+════════════════════════ */
+const API = localStorage.getItem('api_url') || 'http://127.0.0.1:8000'
+let access = localStorage.getItem('access') || null
+let rayonsData = []
+let mahallasData = []
+let chartsMap = {}
+let dashMapInited = false
+let fullMapInited = false
+let dashLeaflet = null
+let fullLeaflet = null
+let dashGeoLayer = null
+let fullGeoLayer = null
+let currentMapMode = 'rayon'
+let currentMapRayon = null
+let currentMapItem = null
+let usingDemo = false
+
+const C = {
+    CYAN: '#00d2ff', GOLD: '#ffc53d', GREEN: '#00e676',
+    RED: '#ff3d71', BLUE: '#2196f3', PURPLE: '#a855f7',
+    ORANGE: '#ff9f0a', CYAN2: '#00a8cc',
+    TEXT: '#cce8ff', TEXT2: '#7ba8cc', TEXT3: '#3a6080',
+    BG: '#050e1f', BG2: '#081529', BG3: '#0b1c38',
+    BORDER: 'rgba(0,210,255,0.18)',
+    GRID: 'rgba(0,210,255,0.06)'
+}
+
+Chart.defaults.color = C.TEXT2
+Chart.defaults.font.family = "'Source Sans 3', sans-serif"
+
+/* ════════════════════════
+   CLOCK
+════════════════════════ */
+const MONTHS = ['Yanvar','Fevral','Mart','Aprel','May','Iyun','Iyul','Avgust','Sentabr','Oktabr','Noyabr','Dekabr']
+function tickClock() {
+    const n = new Date()
+    document.getElementById('clock-time').textContent = n.toTimeString().slice(0,8)
+    document.getElementById('clock-date').textContent = `${n.getDate()} ${MONTHS[n.getMonth()]} ${n.getFullYear()}`
+}
+tickClock(); setInterval(tickClock, 1000)
+
+/* ════════════════════════
+   AUTH
+════════════════════════ */
+;(function(){
+    if(!access){ location.assign('/auth/'); return }
+    try {
+        const p = JSON.parse(atob(access.split('.')[1]))
+        const u = p.username || p.user_id || 'Admin'
+        document.getElementById('user-name').textContent = u
+        document.getElementById('user-avatar').textContent = String(u).charAt(0).toUpperCase()
+    } catch(e){}
+})()
+function logout(){
+    localStorage.removeItem('access'); localStorage.removeItem('refresh')
+    location.assign('/auth/')
+}
+
+/* ════════════════════════
+   API HELPERS
+════════════════════════ */
+async function apiFetch(path){
+    const r = await fetch(API+path,{headers:{'Content-Type':'application/json','Authorization':`Bearer ${access}`}})
+    if(!r.ok) throw new Error(`HTTP ${r.status}`)
+    return r.json()
+}
+async function apiPost(path,body){
+    const r = await fetch(API+path,{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${access}`},body:JSON.stringify(body)})
+    return r.json()
+}
+
+/* ════════════════════════
+   DEMO DATA
+════════════════════════ */
+function getDemoRayons(){
+    return {count:14,results:[
+        {id:1,name:'Nukus tumani',    region:"Qoraqalpog'iston",is_active:true, mahalla_count:18,plot:null},
+        {id:2,name:'Chimboy tumani',  region:"Qoraqalpog'iston",is_active:true, mahalla_count:12,plot:null},
+        {id:3,name:"Qo'ng'irot",      region:"Qoraqalpog'iston",is_active:true, mahalla_count:9, plot:null},
+        {id:4,name:"Mo'ynoq tumani",  region:"Qoraqalpog'iston",is_active:true, mahalla_count:7, plot:null},
+        {id:5,name:"Xo'jayli tumani", region:"Qoraqalpog'iston",is_active:true, mahalla_count:11,plot:null},
+        {id:6,name:'Kegeyli tumani',  region:"Qoraqalpog'iston",is_active:true, mahalla_count:8, plot:null},
+        {id:7,name:"Qorao'zak",       region:"Qoraqalpog'iston",is_active:true, mahalla_count:6, plot:null},
+        {id:8,name:'Turtkul tumani',  region:"Qoraqalpog'iston",is_active:true, mahalla_count:14,plot:null},
+        {id:9,name:'Beruniy tumani',  region:"Qoraqalpog'iston",is_active:true, mahalla_count:10,plot:null},
+        {id:10,name:'Amudaryo',       region:"Qoraqalpog'iston",is_active:false,mahalla_count:5, plot:null},
+        {id:11,name:'Ellikkala',      region:"Qoraqalpog'iston",is_active:true, mahalla_count:13,plot:null},
+        {id:12,name:"Sho'raxon",      region:"Qoraqalpog'iston",is_active:true, mahalla_count:8, plot:null},
+        {id:13,name:"Taxtako'pir",    region:"Qoraqalpog'iston",is_active:true, mahalla_count:7, plot:null},
+        {id:14,name:"Qanliko'l",      region:"Qoraqalpog'iston",is_active:true, mahalla_count:9, plot:null},
+    ]}
+}
+function getDemoMahallas(rayonId){
+    const names=["Dostlik","Yangiobod","Navro'z","Bahor","Guliston","Tinchlik","Mehr","Mustaqillik","Sharq","G'arbiy","Oqdaryo","Qo'shtepa","Olmazor","Bog'iston","Markaziy","Ko'ktepa"]
+    const all=names.map((n,i)=>({id:i+1,name:n,is_active:i%5!==3,rayon:getDemoRayons().results[i%14],description:"Mahalla tavsifi",plot:null}))
+    if(rayonId) return {count:5,results:all.slice(0,5).map(m=>({...m,rayon:getDemoRayons().results.find(r=>r.id===rayonId)||m.rayon}))}
+    return {count:names.length,results:all}
+}
+function getDemoPopStats(){
+    return {aholivabandlik:{total:124830,unemployment:18400,poor_families:3200,employed:68900,households:28400,mehnat_resurslar:72000,norasmi_sektorda_bandlik:22000,horiijga_ketkan_migrantlar:5400,bola_nafaqa_oluvchilar:8200,ijtimoyi_himoyaga_muqtoj_aholi:12300,kam_taminlangan_oylalar:4100},infratuzulma:{yollar_uzunligi:340,toza_ichimlik_suv_taminoti:68,gaz_bilantaminlanganlar:54,elektr_uzulishlari:12}}
+}
+
+/* ════════════════════════
+   LOAD
+════════════════════════ */
+async function loadRayons(){
+    try{ const d=await apiFetch('/api/rayon/'); rayonsData=d.results; return d }
+    catch(e){ usingDemo=true; document.getElementById('api-notice').style.display='flex'; const d=getDemoRayons(); rayonsData=d.results; return d }
+}
+async function loadMahallas(rayonId){
+    try{ const d=await apiFetch(rayonId?`/api/mahalla/?rayon=${rayonId}`:'/api/mahalla/'); if(!rayonId) mahallasData=d.results; return d }
+    catch(e){ const d=getDemoMahallas(rayonId); if(!rayonId) mahallasData=d.results; return d }
+}
+async function loadPopStats(){
+    try{ return await apiFetch('/api/analysis/') }
+    catch(e){ return getDemoPopStats() }
+}
+async function loadByMahalla(){
+    try{ return await apiFetch('/api/analysis/more/') }
+    catch(e){ return {} }
+}
+
+/* ════════════════════════
+   FORMAT
+════════════════════════ */
+function fmt(n){
+    if(n==null||isNaN(n)) return '—'
+    if(n>=1000000) return (n/1000000).toFixed(1)+'M'
+    if(n>=1000) return (n/1000).toFixed(0)+'K'
+    return String(n)
+}
+function fmtFull(n){
+    if(n==null||isNaN(n)) return '—'
+    return n.toLocaleString()
+}
+
+/* ════════════════════════
+   DESTROY CHART
+════════════════════════ */
+function dc(id){ if(chartsMap[id]){chartsMap[id].destroy(); delete chartsMap[id]} }
+
+/* ════════════════════════
+   RENDER STATSBAR
+════════════════════════ */
+function renderStatsBar(rayons, mahallas, pop){
+    const a = pop.aholivabandlik||pop
+    const inf = pop.infratuzulma||{}
+    document.getElementById('sb-rayons').textContent    = rayons.count
+    document.getElementById('sb-mahallas').textContent  = mahallas.count
+    document.getElementById('sb-population').textContent= fmt(a.total)
+    document.getElementById('sb-employed').textContent  = fmt(a.employed)
+    document.getElementById('sb-unemp').textContent     = fmt(a.unemployment)
+    document.getElementById('sb-poor').textContent      = fmt(a.poor_families)
+    document.getElementById('sb-hh').textContent        = fmt(a.households)
+    document.getElementById('sb-water').textContent     = (inf.toza_ichimlik_suv_taminoti||'—')+'%'
+}
+
+/* ════════════════════════
+   DASHBOARD LEFT COL
+════════════════════════ */
+function renderDashRayonsList(rayons){
+    const el = document.getElementById('dash-rayons-list')
+    el.innerHTML = `<table class="dt"><thead><tr><th>Nomi</th><th>Mahalla</th><th>Holat</th></tr></thead><tbody>${
+        rayons.results.map(r=>`<tr class="cl" onclick="openRayonDetail(${r.id})">
+            <td style="font-size:0.7rem;"><span class="sdot ${r.is_active?'on':'off'}"></span>${r.name.replace(' tumani','')}</td>
+            <td><span class="mbadge">${r.mahalla_count||'—'}</span></td>
+            <td style="font-size:0.65rem;color:${r.is_active?'var(--green)':'var(--text3)'};">${r.is_active?'Faol':'Nofaol'}</td>
+        </tr>`).join('')
+    }</tbody></table>`
+}
+
+function renderDashMahallasList(mahallas){
+    const el = document.getElementById('dash-mahallas-list')
+    const list = mahallas.results.slice(0,8)
+    el.innerHTML = `<table class="dt"><thead><tr><th>Nomi</th><th>Rayon</th><th>Holat</th></tr></thead><tbody>${
+        list.map(m=>`<tr class="cl" onclick="openMahallaDetail(${m.id},'dashboard')">
+            <td style="font-size:0.7rem;"><span class="sdot ${m.is_active?'on':'off'}"></span>${m.name}</td>
+            <td style="font-size:0.65rem;color:var(--text3);">${(m.rayon?.name||'—').replace(' tumani','')}</td>
+            <td style="font-size:0.65rem;color:${m.is_active?'var(--green)':'var(--text3)'};">${m.is_active?'Faol':'Nofaol'}</td>
+        </tr>`).join('')
+    }</tbody></table>`
+}
+
+function renderSocialStats(pop){
+    const a = pop.aholivabandlik||pop
+    const el = document.getElementById('social-stats')
+    const items = [
+        {k:"Bola nafaqa oluvchi", v:a.bola_nafaqa_oluvchilar},
+        {k:"Ijtimoiy himoyada", v:a.ijtimoyi_himoyaga_muqtoj_aholi},
+        {k:"Norasmiy sektorda", v:a.norasmi_sektorda_bandlik},
+        {k:"Migrantlar", v:a.horiijga_ketkan_migrantlar},
+    ]
+    el.innerHTML = items.map(i=>`
+        <div class="mini-stat">
+            <span class="k">${i.k}</span>
+            <span class="v">${fmt(i.v)}</span>
+        </div>
+    `).join('')
+}
+
+function renderInfraMini(pop){
+    const inf = pop.infratuzulma||{}
+    const el = document.getElementById('infra-mini')
+    const items = [
+        {k:"Yo'llar uzunligi",v:fmt(inf.yollar_uzunligi)+' km',bar:null},
+        {k:"Toza suv ta'minoti",v:(inf.toza_ichimlik_suv_taminoti||0)+'%',bar:inf.toza_ichimlik_suv_taminoti,c:'var(--cyan)'},
+        {k:"Gaz ta'minoti",v:(inf.gaz_bilantaminlanganlar||0)+'%',bar:inf.gaz_bilantaminlanganlar,c:'var(--green)'},
+        {k:"Elektr uzilishlari",v:fmt(inf.elektr_uzulishlari),bar:null},
+    ]
+    el.innerHTML = items.map(i=>`
+        <div class="prog-row">
+            <span class="prog-lbl">${i.k}</span>
+            ${i.bar!=null?`<div class="prog-bar"><div class="prog-fill" style="width:${Math.min(i.bar,100)}%;background:${i.c};"></div></div>`:''}
+            <span class="prog-val" style="color:${i.c||'var(--text)'};">${i.v}</span>
+        </div>
+    `).join('')
+}
+
+/* ════════════════════════
+   CHARTS
+════════════════════════ */
+function buildBarChart(rayons){
+    dc('chart-bar')
+    const ctx = document.getElementById('chart-bar')
+    if(!ctx) return
+    const labels = rayons.results.map(r=>r.name.replace(' tumani','').replace(' Respublikasi',''))
+    const vals   = rayons.results.map(r=>r.mahalla_count||Math.floor(Math.random()*12)+4)
+    chartsMap['chart-bar'] = new Chart(ctx,{
+        type:'bar',
+        data:{labels,datasets:[{label:'Mahallalar',data:vals,backgroundColor:'rgba(0,210,255,0.6)',borderColor:C.CYAN,borderWidth:1,borderRadius:2}]},
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:C.GRID},ticks:{font:{size:9}}},y:{grid:{color:C.GRID},beginAtZero:true,ticks:{font:{size:9}}}}}
+    })
+}
+
+function buildPieChart(mahallas){
+    dc('chart-pie')
+    const ctx = document.getElementById('chart-pie')
+    if(!ctx) return
+    const active = mahallas.results.filter(m=>m.is_active).length
+    const inactive = mahallas.results.filter(m=>!m.is_active).length
+    const total = mahallas.results.length||1
+    chartsMap['chart-pie'] = new Chart(ctx,{
+        type:'doughnut',
+        data:{labels:['Faol','Nofaol'],datasets:[{data:[active,inactive],backgroundColor:[C.CYAN,C.TEXT3],borderWidth:0}]},
+        options:{responsive:true,maintainAspectRatio:false,cutout:'70%',plugins:{legend:{display:false}}}
+    })
+    document.getElementById('pie-stats').innerHTML = `
+        <div class="prog-row"><span class="prog-lbl" style="color:var(--cyan);">● Faol</span><span class="prog-val" style="color:var(--cyan);">${active}</span></div>
+        <div class="prog-row"><span class="prog-lbl" style="color:var(--text3);">● Nofaol</span><span class="prog-val" style="color:var(--text3);">${inactive}</span></div>
+        <div class="prog-row"><span class="prog-lbl">Jami</span><span class="prog-val">${total}</span></div>
+    `
+}
+
+function buildEmployChart(){
+    dc('chart-employ')
+    const ctx = document.getElementById('chart-employ')
+    if(!ctx) return
+    loadPopStats().then(data=>{
+        const a = data.aholivabandlik||data
+        chartsMap['chart-employ'] = new Chart(ctx,{
+            type:'bar',
+            data:{labels:['Aholi','Ishsiz','Mehnat','Rasmiy','Norasmiy','Migrant'],
+                datasets:[{data:[a.total,a.unemployment,a.mehnat_resurslar,a.employed,a.norasmi_sektorda_bandlik,a.horiijga_ketkan_migrantlar],
+                    backgroundColor:[C.BLUE,C.RED,C.GOLD,C.GREEN,C.ORANGE,C.PURPLE],borderRadius:2}]},
+            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:C.GRID},ticks:{font:{size:8}}},y:{grid:{color:C.GRID},beginAtZero:true,ticks:{font:{size:8}}}}}
+        })
+    })
+}
+
+function buildPopCharts(){
+    dc('chart-pop-employ'); dc('chart-pop-social')
+    loadPopStats().then(data=>{
+        const a = data.aholivabandlik||data
+        const ctx1 = document.getElementById('chart-pop-employ')
+        if(ctx1){
+            chartsMap['chart-pop-employ'] = new Chart(ctx1,{
+                type:'bar',
+                data:{labels:['Jami aholi','Ishsizlar','Mehnat resursi','Band aholi','Norasmiy sektor','Migrantlar'],
+                    datasets:[{data:[a.total,a.unemployment,a.mehnat_resurslar,a.employed,a.norasmi_sektorda_bandlik,a.horiijga_ketkan_migrantlar],
+                        backgroundColor:[C.BLUE,C.RED,C.GOLD,C.GREEN,C.ORANGE,C.PURPLE],borderRadius:3}]},
+                options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:C.GRID},ticks:{font:{size:9},maxRotation:30}},y:{grid:{color:C.GRID},beginAtZero:true}}}
+            })
+        }
+        const ctx2 = document.getElementById('chart-pop-social')
+        if(ctx2){
+            chartsMap['chart-pop-social'] = new Chart(ctx2,{
+                type:'bar',
+                data:{labels:["Bola nafaqa","Ijtimoiy himoya","Kam ta'minlangan"],
+                    datasets:[{data:[a.bola_nafaqa_oluvchilar,a.ijtimoyi_himoyaga_muqtoj_aholi,a.kam_taminlangan_oylalar],
+                        backgroundColor:'rgba(0,210,255,0.6)',borderRadius:3}]},
+                options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{color:C.GRID}},y:{grid:{display:false},ticks:{font:{size:10}}}}}
+            })
+        }
+        document.getElementById('pop-total').textContent = fmt(a.total)
+        document.getElementById('pop-hh').textContent    = fmt(a.households)
+        document.getElementById('pop-poor').textContent  = fmt(a.poor_families)
+        document.getElementById('pop-emp').textContent   = fmt(a.employed)
+    })
+}
+
+function buildInfraFull(){
+    dc('chart-infra-full')
+    const ctx = document.getElementById('chart-infra-full')
+    if(!ctx) return
+    const labels = mahallasData.slice(0,8).map(m=>m.name)
+    loadByMahalla().then(data=>{
+        const roads = labels.map(n=>data[n]?.infratuzulma?.[0]?.yollar_uzunligi||0)
+        const water = labels.map(n=>data[n]?.infratuzulma?.[0]?.toza_ichimlik_suv_taminoti||0)
+        const gas   = labels.map(n=>data[n]?.infratuzulma?.[0]?.gaz_bilantaminlanganlar||0)
+        chartsMap['chart-infra-full'] = new Chart(ctx,{
+            type:'bar',
+            data:{labels,datasets:[
+                {label:"Yo'llar (km)",data:roads,backgroundColor:'rgba(255,197,61,0.65)',borderRadius:3},
+                {label:"Suv (%)",data:water,backgroundColor:'rgba(0,210,255,0.65)',borderRadius:3},
+                {label:"Gaz (%)",data:gas,backgroundColor:'rgba(0,230,118,0.65)',borderRadius:3},
+            ]},
+            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:10},color:C.TEXT2}}},scales:{x:{grid:{color:C.GRID}},y:{grid:{color:C.GRID},beginAtZero:true}}}
+        })
+    })
+}
+
+/* ════════════════════════
+   TABLES (full pages)
+════════════════════════ */
+function renderRayonsTable(container, data, clickable){
+    container.innerHTML = `<table class="dt"><thead><tr>
+        <th>Rayon nomi</th><th>Viloyat</th><th>Mahallalar</th><th>Holat</th>
+        ${clickable?'<th></th>':''}
+    </tr></thead><tbody>${
+        data.results.map(r=>`<tr class="${clickable?'cl':''}" ${clickable?`onclick="openRayonDetail(${r.id})"`:''}>
+            <td><span class="sdot ${r.is_active?'on':'off'}"></span>${r.name}</td>
+            <td style="color:var(--text3);font-size:0.7rem;">${r.region}</td>
+            <td><span class="mbadge">${r.mahalla_count||'—'}</span></td>
+            <td style="font-size:0.7rem;color:${r.is_active?'var(--green)':'var(--text3)'};">${r.is_active?'Faol':'Nofaol'}</td>
+            ${clickable?'<td style="color:var(--cyan);font-size:0.7rem;"><i class="fas fa-chevron-right"></i></td>':''}
+        </tr>`).join('')
+    }</tbody></table>`
+}
+
+/* ════════════════════════
+   RAYON DETAIL
+════════════════════════ */
+async function openRayonDetail(rayonId){
+    const rayon = rayonsData.find(r=>r.id===rayonId)
+    if(!rayon) return
+    document.getElementById('rayon-detail-name').textContent = rayon.name
+    document.getElementById('rayon-detail-sub').textContent = `${rayon.region} · ${rayon.is_active?'Faol':'Nofaol'}`
+    ;['rd-mahallas','rd-pop','rd-unemp','rd-hh'].forEach(id=>document.getElementById(id).textContent='...')
+    showPage('rayon-detail')
+    const mData = await loadMahallas(rayonId)
+    document.getElementById('rd-mahallas').textContent = mData.count||mData.results.length
+    document.getElementById('rd-mahalla-badge').textContent = `${mData.results.length} ta mahalla`
+    let tp=0,tu=0,th=0
+    const byM = await loadByMahalla()
+    mData.results.forEach(m=>{
+        const s=byM[m.name]?.aholivabandlik?.[0]
+        if(s){tp+=s.aholi_soni||0; tu+=s.ishsizlar_soni||0; th+=s.honadonlar_soni||0}
+    })
+    document.getElementById('rd-pop').textContent  = fmt(tp)||'—'
+    document.getElementById('rd-unemp').textContent= fmt(tu)||'—'
+    document.getElementById('rd-hh').textContent   = fmt(th)||'—'
+    const tbl = document.getElementById('rayon-detail-mahallas')
+    if(!mData.results.length){tbl.innerHTML='<div style="padding:12px;color:var(--text3);font-size:0.8rem;">Mahallalar topilmadi</div>'; return}
+    tbl.innerHTML = `<table class="dt"><thead><tr><th>Mahalla nomi</th><th>Tavsif</th><th>Holat</th><th></th></tr></thead><tbody>${
+        mData.results.map(m=>`<tr class="cl" onclick="openMahallaDetail(${m.id},'rayon-detail')">
+            <td><span class="sdot ${m.is_active?'on':'off'}"></span>${m.name}</td>
+            <td style="color:var(--text3);font-size:0.68rem;">${m.description||'—'}</td>
+            <td style="font-size:0.68rem;color:${m.is_active?'var(--green)':'var(--text3)'};">${m.is_active?'Faol':'Nofaol'}</td>
+            <td style="color:var(--cyan);font-size:0.68rem;"><i class="fas fa-chevron-right"></i></td>
+        </tr>`).join('')
+    }</tbody></table>`
+}
+
+/* ════════════════════════
+   MAHALLAS GRID
+════════════════════════ */
+function renderMahallasGrid(data){
+    const grid = document.getElementById('mahallas-grid')
+    if(!data.results.length){grid.innerHTML='<div style="color:var(--text3);">Mahallalar topilmadi</div>'; return}
+    grid.innerHTML = data.results.map(m=>`
+        <div class="m-card" onclick="openMahallaDetail(${m.id},'mahallas')">
+            <div class="name"><span class="sdot ${m.is_active?'on':'off'}"></span>${m.name}</div>
+            <div class="rtag">${m.rayon?.name||'—'}</div>
+            <div class="m-stats">
+                <div class="ms"><span class="v">${m.is_active?'Faol':'Nofaol'}</span><span class="l">Holat</span></div>
+            </div>
+        </div>
+    `).join('')
+}
+
+function filterMahallas(q){
+    document.querySelectorAll('#mahallas-grid .m-card').forEach(c=>{
+        c.style.display = c.textContent.toLowerCase().includes(q.toLowerCase())?'':'none'
+    })
+}
+
+/* ════════════════════════
+   MAHALLA DETAIL
+════════════════════════ */
+let mahallaPrev = 'mahallas'
+async function openMahallaDetail(mahallaId, fromPage){
+    mahallaPrev = fromPage||'mahallas'
+    let mahalla = mahallasData.find(m=>m.id===mahallaId)
+    if(!mahalla){ try{ mahalla=await apiFetch(`/api/mahalla/${mahallaId}/`) }catch(e){mahalla={id:mahallaId,name:'Mahalla',rayon:{name:'—'},is_active:true}} }
+    document.getElementById('mahalla-detail-name').textContent = mahalla.name
+    document.getElementById('mahalla-detail-sub').textContent = `${mahalla.rayon?.name||'—'} · ${mahalla.is_active?'Faol':'Nofaol'}`
+    document.getElementById('mahalla-back-btn').onclick = ()=>showPage(mahallaPrev)
+    ;['md-pop','md-unemp','md-hh','md-salary'].forEach(id=>document.getElementById(id).textContent='...')
+    document.getElementById('md-avb').innerHTML = '<div class="loading"><div class="spinner"></div></div>'
+    document.getElementById('md-infra').innerHTML = '<div class="loading"><div class="spinner"></div></div>'
+    showPage('mahalla-detail')
+    const byM = await loadByMahalla()
+    const stats = byM[mahalla.name]
+    if(stats){
+        const avb = stats.aholivabandlik?.[0]
+        const infra = stats.infratuzulma?.[0]
+        if(avb){
+            document.getElementById('md-pop').textContent    = fmt(avb.aholi_soni)
+            document.getElementById('md-unemp').textContent  = fmt(avb.ishsizlar_soni)
+            document.getElementById('md-hh').textContent     = fmt(avb.honadonlar_soni)
+            document.getElementById('md-salary').textContent = fmt(avb.urtacha_oylik_maosh)
+            document.getElementById('md-avb').innerHTML = renderSL([
+                {k:'Aholi soni',v:avb.aholi_soni},{k:'Ishsizlar',v:avb.ishsizlar_soni},
+                {k:'Ishsizlik (%)',v:avb.rasmiy_ishsizlik_darajasi},{k:'Mehnat resursi',v:avb.mehnat_resurslari},
+                {k:'Band aholi',v:avb.band_aholi},{k:'Norasmiy',v:avb.norasmi_sektorda_bandlik},
+                {k:'Migrantlar',v:avb.horiijga_ketkan_migrantlar},{k:'Kambag\'al oila',v:avb.kambagal_oylalar_soni},
+            ])
+        } else {
+            document.getElementById('md-avb').innerHTML='<div style="color:var(--text3);font-size:0.78rem;padding:8px;">Ma\'lumot yo\'q</div>'
+        }
+        if(infra){
+            document.getElementById('md-infra').innerHTML = renderSL([
+                {k:"Yo'llar (km)",v:infra.yollar_uzunligi},{k:"Toza suv (%)",v:infra.toza_ichimlik_suv_taminoti},
+                {k:"Gaz (%)",v:infra.gaz_bilantaminlanganlar},{k:"Elektr uzilish",v:infra.elektr_uzulishlari},
+                {k:"Maydon (km²)",v:infra.umumiy_maydon},{k:"Aholi zichligi",v:infra.aholi_zichligi},
+            ])
+        } else {
+            document.getElementById('md-infra').innerHTML='<div style="color:var(--text3);font-size:0.78rem;padding:8px;">Ma\'lumot yo\'q</div>'
+        }
+    } else {
+        ;['md-pop','md-unemp','md-hh','md-salary'].forEach(id=>document.getElementById(id).textContent='—')
+        document.getElementById('md-avb').innerHTML='<div style="color:var(--text3);font-size:0.78rem;padding:8px;">Bu mahalla uchun statistika yo\'q</div>'
+        document.getElementById('md-infra').innerHTML='<div style="color:var(--text3);font-size:0.78rem;padding:8px;">Infratuzilma ma\'lumotlari yo\'q</div>'
+    }
+    window._currentMahallaForAI = mahalla
+}
+
+function renderSL(items){
+    return '<div class="stat-list-v">'+items.map(i=>`
+        <div class="sl-row">
+            <span class="k">${i.k}</span>
+            <span class="v">${fmt(i.v)}</span>
+        </div>
+    `).join('')+'</div>'
+}
+
+/* ════════════════════════
+   INFRA PAGE
+════════════════════════ */
+function renderInfraPage(pop){
+    const inf = pop.infratuzulma||{}
+    document.getElementById('inf-roads').textContent = fmt(inf.yollar_uzunligi)
+    document.getElementById('inf-water').textContent = (inf.toza_ichimlik_suv_taminoti||'—')+'%'
+    document.getElementById('inf-gas').textContent   = (inf.gaz_bilantaminlanganlar||'—')+'%'
+    document.getElementById('inf-power').textContent = fmt(inf.elektr_uzulishlari)
+}
+
+/* ════════════════════════
+   LEAFLET MAPS
+════════════════════════ */
+const MAP_CENTER = [42.5958,59.5379]
+
+function featureStyle(f){
+    const c = f.properties.is_active!==false ? (currentMapMode==='mahalla'?'#ffc53d':'#00d2ff') : '#3a6080'
+    return {color:c,weight:2,opacity:0.9,fillOpacity:0.3,fillColor:c}
+}
+
+function initDashMap(){
+    if(dashMapInited) return
+    dashMapInited = true
+    dashLeaflet = L.map('leaflet-map',{zoomControl:true,attributionControl:false}).setView(MAP_CENTER,9)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(dashLeaflet)
+    dashGeoLayer = L.geoJSON(null,{style:featureStyle,onEachFeature:(f,l)=>{
+        l.on({click:()=>onDashMapClick(f,l),mouseover:()=>l.setStyle({fillOpacity:0.6,weight:3}),mouseout:()=>dashGeoLayer.resetStyle(l)})
+    }}).addTo(dashLeaflet)
+    loadDashMapRayons()
+}
+
+async function loadDashMapRayons(){
+    currentMapMode='rayon'
+    document.getElementById('dash-crumb-rayon').style.display='none'
+    dashGeoLayer.clearLayers()
+    const data = await (async()=>{try{return await apiFetch('/api/rayon/')}catch(e){return getDemoRayons()}})()
+    const features = data.results.filter(r=>r.plot?.geometry).map(r=>({...r.plot,properties:{...r.plot.properties,id:r.id,name:r.name,is_active:r.is_active,mahalla_count:r.mahalla_count,_type:'rayon',_data:r}}))
+    if(features.length) dashGeoLayer.addData({type:'FeatureCollection',features})
+}
+
+async function onDashMapClick(f,l){
+    const p = f.properties
+    if(p._type==='rayon'){
+        const r = p._data||rayonsData.find(x=>x.id===p.id)||{id:p.id,name:p.name,region:'—',is_active:p.is_active}
+        if(l.getBounds) dashLeaflet.fitBounds(l.getBounds(),{padding:[30,30]})
+        // drill down to mahallas
+        currentMapMode='mahalla'
+        currentMapRayon=r
+        document.getElementById('dash-crumb-rayon').style.display='inline'
+        document.getElementById('dash-crumb-rname').textContent=r.name
+        dashGeoLayer.clearLayers()
+        const mData = await (async()=>{try{return await apiFetch(`/api/mahalla/?rayon=${r.id}`)}catch(e){return getDemoMahallas(r.id)}})()
+        const features = mData.results.filter(m=>m.plot?.geometry).map(m=>({...m.plot,properties:{...m.plot.properties,id:m.id,name:m.name,is_active:m.is_active,_type:'mahalla',_data:m}}))
+        if(features.length) dashGeoLayer.addData({type:'FeatureCollection',features})
+    }
+}
+
+function mapGoBack(){
+    currentMapMode='rayon'; currentMapRayon=null
+    dashGeoLayer?.clearLayers()
+    loadDashMapRayons()
+}
+
+/* FULL MAP */
+function initFullMap(){
+    if(fullMapInited) return
+    fullMapInited=true
+    fullLeaflet = L.map('leaflet-map-full',{zoomControl:true,attributionControl:false}).setView(MAP_CENTER,9)
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(fullLeaflet)
+    fullGeoLayer = L.geoJSON(null,{style:featureStyle,onEachFeature:(f,l)=>{
+        l.on({click:()=>onFullMapClick(f,l),mouseover:()=>l.setStyle({fillOpacity:0.6,weight:3}),mouseout:()=>fullGeoLayer.resetStyle(l)})
+    }}).addTo(fullLeaflet)
+    loadFullMapRayons()
+}
+
+async function loadFullMapRayons(){
+    currentMapMode='rayon'
+    document.getElementById('map-back-btn').style.display='none'
+    document.getElementById('map-crumb-r').style.display='none'
+    document.getElementById('map-info-panel').style.display='none'
+    document.getElementById('map-page-sub').textContent="Qoraqalpog'iston rayonlari. Rayon ustiga bosing."
+    fullGeoLayer.clearLayers()
+    const data=await(async()=>{try{return await apiFetch('/api/rayon/')}catch(e){return getDemoRayons()}})()
+    const features=data.results.filter(r=>r.plot?.geometry).map(r=>({...r.plot,properties:{...r.plot.properties,id:r.id,name:r.name,is_active:r.is_active,mahalla_count:r.mahalla_count,_type:'rayon',_data:r}}))
+    if(features.length) fullGeoLayer.addData({type:'FeatureCollection',features})
+}
+
+async function onFullMapClick(f,l){
+    const p=f.properties
+    if(p._type==='rayon'){
+        const r=p._data||rayonsData.find(x=>x.id===p.id)||{id:p.id,name:p.name,is_active:p.is_active}
+        currentMapItem={obj:r,type:'rayon'}
+        if(l.getBounds) fullLeaflet.fitBounds(l.getBounds(),{padding:[30,30]})
+        showMapInfo(p.name,[{k:'Mahallalar',v:p.mahalla_count||'—'},{k:'Holat',v:p.is_active?'Faol':'Nofaol'}])
+    } else if(p._type==='mahalla'){
+        const m=p._data
+        currentMapItem={obj:m,type:'mahalla'}
+        if(l.getBounds) fullLeaflet.fitBounds(l.getBounds(),{padding:[30,30]})
+        const byM=await loadByMahalla()
+        const stats=byM[m.name]?.aholivabandlik?.[0]
+        showMapInfo(p.name,[{k:'Rayon',v:m.rayon?.name||'—'},{k:'Aholi',v:stats?.aholi_soni||'—'},{k:'Ishsizlar',v:stats?.ishsizlar_soni||'—'},{k:'Holat',v:p.is_active?'Faol':'Nofaol'}])
+    }
+}
+
+function showMapInfo(title,items){
+    document.getElementById('map-info-title').textContent=title
+    document.getElementById('map-info-content').innerHTML=items.map(i=>`<div class="map-stat-item"><span class="k">${i.k}</span><span class="v">${i.v}</span></div>`).join('')
+    document.getElementById('map-info-panel').style.display='block'
+}
+
+function mapOpenDetail(){
+    if(!currentMapItem) return
+    if(currentMapItem.type==='rayon'){
+        const r=currentMapItem.obj
+        if(currentMapMode==='rayon'){
+            // drill into mahallas
+            currentMapMode='mahalla'; currentMapRayon=r
+            document.getElementById('map-back-btn').style.display='flex'
+            document.getElementById('map-crumb-r').style.display='inline'
+            document.getElementById('map-crumb-rname').textContent=r.name
+            document.getElementById('map-page-sub').textContent=`${r.name} mahallalari`
+            document.getElementById('map-info-panel').style.display='none'
+            fullGeoLayer.clearLayers()
+            ;(async()=>{
+                const mData=await(async()=>{try{return await apiFetch(`/api/mahalla/?rayon=${r.id}`)}catch(e){return getDemoMahallas(r.id)}})()
+                const features=mData.results.filter(m=>m.plot?.geometry).map(m=>({...m.plot,properties:{...m.plot.properties,id:m.id,name:m.name,is_active:m.is_active,_type:'mahalla',_data:m}}))
+                if(features.length) fullGeoLayer.addData({type:'FeatureCollection',features})
+            })()
+        } else { openRayonDetail(r.id) }
+    } else if(currentMapItem.type==='mahalla'){
+        openMahallaDetail(currentMapItem.obj.id,'map')
+        showPage('mahalla-detail')
+    }
+}
+
+function mapGoBack2(){
+    document.getElementById('map-info-panel').style.display='none'
+    loadFullMapRayons()
+}
+
+/* ════════════════════════
+   AI MASLAHATCHI
+════════════════════════ */
+function populateAISel(){
+    const sel=document.getElementById('ai-mahalla-sel')
+    const cur=sel.value
+    sel.innerHTML='<option value="">— Tanlang —</option>'
+    mahallasData.forEach(m=>{sel.innerHTML+=`<option value="${m.id}" data-name="${m.name}">${m.name} (${m.rayon?.name||'—'})</option>`})
+    if(cur) sel.value=cur
+}
+
+function onAIMahallaChange(){
+    const sel=document.getElementById('ai-mahalla-sel')
+    const id=parseInt(sel.value)
+    if(!id){document.getElementById('ai-ctx-row').style.display='none'; document.getElementById('ai-advice-panel').style.display='none'; return}
+    const mahalla=mahallasData.find(m=>m.id===id)
+    if(!mahalla) return
+    loadByMahalla().then(byM=>{
+        const stats=byM[mahalla.name]
+        const avb=stats?.aholivabandlik?.[0]
+        document.getElementById('ai-ctx-row').style.display='grid'
+        document.getElementById('ai-ctx-pop').textContent=fmt(avb?.aholi_soni)
+        document.getElementById('ai-ctx-pop-s').textContent=fmt(avb?.honadonlar_soni)+' honadon'
+        document.getElementById('ai-ctx-unemp').textContent=(avb?.rasmiy_ishsizlik_darajasi||'—')+'%'
+        document.getElementById('ai-ctx-unemp-s').textContent=fmt(avb?.ishsizlar_soni)+' kishi'
+        document.getElementById('ai-ctx-sal').textContent=fmt(avb?.urtacha_oylik_maosh)
+        document.getElementById('ai-ctx-poor').textContent=fmt(avb?.kambagal_oylalar_soni)
+        document.getElementById('ai-ctx-poor-s').textContent=fmt(avb?.kam_taminlangan_oylalar)+' kam ta\'minlangan'
+        document.getElementById('ai-advice-panel').style.display='none'
+    })
+}
+
+async function runAI(){
+    const sel=document.getElementById('ai-mahalla-sel')
+    const id=parseInt(sel.value)
+    const mahallaName=sel.options[sel.selectedIndex]?.dataset?.name
+    if(!id||!mahallaName){alert("Iltimos, avval mahallani tanlang"); return}
+    const mahalla=mahallasData.find(m=>m.id===id)||{name:mahallaName,rayon:{name:'—'}}
+    const byM=await loadByMahalla()
+    const stats=byM[mahallaName]
+    const avb=stats?.aholivabandlik?.[0]||{}
+    const infra=stats?.infratuzulma?.[0]||{}
+    document.getElementById('ai-advice-panel').style.display='block'
+    document.getElementById('ai-advice-body').innerHTML='<div class="loading"><div class="spinner"></div> AI tahlil qilmoqda...</div>'
+    try{const res=await apiFetch('/api/ai/'); renderAIAdvice(res); return}catch(e){}
+    const ctx={mahalla:mahallaName,rayon:mahalla.rayon?.name||'—',aholi_soni:avb.aholi_soni||0,ishsizlar_soni:avb.ishsizlar_soni||0,ishsizlik_foizi:avb.rasmiy_ishsizlik_darajasi||0,urtacha_oylik_maosh:avb.urtacha_oylik_maosh||0,kambagal_oylalar:avb.kambagal_oylalar_soni||0,honadonlar_soni:avb.honadonlar_soni||0,norasmi_sektor:avb.norasmi_sektorda_bandlik||0,yollar_uzunligi:infra.yollar_uzunligi||0,toza_suv:infra.toza_ichimlik_suv_taminoti||0,gaz:infra.gaz_bilantaminlanganlar||0,sanoat_zonasi:infra.sanoat_zonasi_er_foydalanish||0}
+    const prompt=`Sen SmartMahalla tizimining AI Mashlahatchi yordamchisisisan. Qoraqalpog'iston Respublikasidagi mahallalar uchun biznes tavsiyalari berasan.\n\nMahalla: ${ctx.mahalla} (${ctx.rayon})\nAholi: ${ctx.aholi_soni}, Uy-xonadon: ${ctx.honadonlar_soni}\nIshsizlar: ${ctx.ishsizlar_soni} (${ctx.ishsizlik_foizi}%)\nMaosh: ${ctx.urtacha_oylik_maosh} so'm\nKambag'al oila: ${ctx.kambagal_oylalar}\nNorasmiy: ${ctx.norasmi_sektor}\nYo'llar: ${ctx.yollar_uzunligi} km, Suv: ${ctx.toza_suv}%, Gaz: ${ctx.gaz}%\n\n4 ta biznes tavsiya qil. FAQAT JSON:\n[\n  {"title":"...","description":"...","investment":"...","risk":"past|o'rta|yuqori","tags":["..."]}\n]`
+    try{
+        const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1500,messages:[{role:'user',content:prompt}]})})
+        const data=await res.json()
+        const text=data.content?.map(c=>c.text||'').join('').replace(/```json|```/g,'').trim()
+        renderAIAdvice(JSON.parse(text))
+    }catch(e){renderAIFallback(ctx)}
+}
+
+function renderAIAdvice(data){
+    const list=Array.isArray(data)?data:(data.businesses||data.tavsiyal||[])
+    if(!list.length){document.getElementById('ai-advice-body').innerHTML='<div style="color:var(--text3);">Tavsiya topilmadi</div>'; return}
+    const icons=['🏪','🏭','🌾','🛠','🚗','🍽','📦','💊','🎓','🧵']
+    document.getElementById('ai-advice-body').innerHTML=`<div class="ai-biz-list">${
+        list.map((b,i)=>`<div class="ai-biz">
+            <div class="bt">${icons[i%icons.length]} ${b.title}</div>
+            <div class="bd">${b.description}</div>
+            <div class="tags">
+                ${b.investment?`<span class="biz-tag def"><i class="fas fa-coins"></i> ${b.investment}</span>`:''}
+                <span class="biz-tag ${b.risk==='past'?'low':b.risk==='yuqori'?'high':'mid'}">Risk: ${b.risk||'o\'rta'}</span>
+                ${(b.tags||[]).map(t=>`<span class="biz-tag def">${t}</span>`).join('')}
+            </div>
+        </div>`).join('')
+    }</div>`
+}
+
+function renderAIFallback(ctx){
+    const s=[]
+    if(ctx.ishsizlik_foizi>15) s.push({title:"Hunarmandchilik markazi",description:"Yuqori ishsizlik darajasi hisobga olinib, mahalliy hunarmandchilik ustaxonasi ko'plab ishchi o'rinlari yaratadi.",investment:"5-20 mln so'm",risk:"past",tags:["Hunarmandchilik"]})
+    if(ctx.aholi_soni>5000) s.push({title:"Mahalliy bozor",description:"Ko'p aholiga ega mahallalarda savdo nuqtasi doimiy talabga ega.",investment:"10-30 mln so'm",risk:"past",tags:["Savdo"]})
+    if(ctx.gaz>50&&ctx.toza_suv>60) s.push({title:"Qishloq xo'jaligi qayta ishlash",description:"Yaxshi infratuzilma qishloq xo'jaligi mahsulotlarini qayta ishlash uchun qulay sharoit.",investment:"20-50 mln so'm",risk:"o'rta",tags:["Agro"]})
+    s.push({title:"Xizmat ko'rsatish",description:"Sartaroshxona, go'zallik saloni, kiyim ta'mirlash kabi xizmatlar kam investitsiya.",investment:"3-10 mln so'm",risk:"past",tags:["Xizmat"]})
+    renderAIAdvice(s)
+}
+
+function openAIForMahalla(){
+    const m=window._currentMahallaForAI
+    showPage('ai')
+    if(!m) return
+    const sel=document.getElementById('ai-mahalla-sel')
+    if(!sel.querySelector(`option[value="${m.id}"]`)) populateAISel()
+    sel.value=m.id
+    onAIMahallaChange()
+}
+
+/* ════════════════════════
+   MODALS
+════════════════════════ */
+function openAddRayonModal(){document.getElementById('modal-add-rayon').classList.add('open')}
+function openAddMahallaModal(){
+    const sel=document.getElementById('inp-mahalla-rayon')
+    sel.innerHTML=rayonsData.map(r=>`<option value="${r.id}">${r.name}</option>`).join('')
+    document.getElementById('modal-add-mahalla').classList.add('open')
+}
+function closeModal(id){document.getElementById(id).classList.remove('open')}
+
+async function submitAddRayon(){
+    const name=document.getElementById('inp-rayon-name').value.trim()
+    const region=document.getElementById('inp-rayon-region').value.trim()
+    if(!name){alert('Rayon nomini kiriting'); return}
+    if(usingDemo){alert('Demo rejim: API ga ulanib bo\'lmadi.'); closeModal('modal-add-rayon'); return}
+    const res=await apiPost('/api/rayon/',{name,region})
+    if(res.id){sessionStorage.setItem('query','rayon'); sessionStorage.setItem('query_id',res.id); location.assign('/add_coordinates/')}
+    else alert(JSON.stringify(res))
+}
+
+async function submitAddMahalla(){
+    const rayon_id=document.getElementById('inp-mahalla-rayon').value
+    const name=document.getElementById('inp-mahalla-name').value.trim()
+    const desc=document.getElementById('inp-mahalla-desc').value.trim()
+    if(!name){alert('Mahalla nomini kiriting'); return}
+    if(usingDemo){alert('Demo rejim.'); closeModal('modal-add-mahalla'); return}
+    const res=await apiPost('/api/mahalla/',{rayon_id,name,description:desc})
+    if(res.id){sessionStorage.setItem('query','mahalla'); sessionStorage.setItem('query_id',res.id); location.assign('/add_coordinates/')}
+    else alert(JSON.stringify(res))
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o=>o.addEventListener('click',e=>{if(e.target===o) o.classList.remove('open')}))
+
+/* ════════════════════════
+   PAGE NAV
+════════════════════════ */
+const PAGE_NAV = {
+    dashboard:'Bosh sahifa',rayons:'Rayonlar','rayon-detail':'Rayonlar',
+    mahallas:'Mahallalar','mahalla-detail':'Mahallalar',
+    population:'Aholi',infra:'Infratuzilma',map:'Xarita',ai:'AI Maslahatchi'
+}
+
+function showPage(name){
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'))
+    const page=document.getElementById('page-'+name)
+    if(page) page.classList.add('active')
+    const navTxt=PAGE_NAV[name]||name
+    document.querySelectorAll('.nav-item').forEach(n=>{if(n.textContent.trim()===navTxt) n.classList.add('active')})
+    document.getElementById('content-area').scrollTop=0
+
+    if(name==='rayons'){
+        const w=document.getElementById('rayons-full-table')
+        if(rayonsData.length){renderRayonsTable(w,{results:rayonsData},true); document.getElementById('rayon-count-badge').textContent=`${rayonsData.length} ta`}
+    }
+    if(name==='mahallas'){
+        if(mahallasData.length) renderMahallasGrid({results:mahallasData})
+    }
+    if(name==='population'){
+        setTimeout(()=>buildPopCharts(),100)
+    }
+    if(name==='infra'){
+        loadPopStats().then(p=>renderInfraPage(p))
+        setTimeout(()=>buildInfraFull(),100)
+    }
+    if(name==='map'){
+        setTimeout(()=>initFullMap(),150)
+    }
+    if(name==='ai'){
+        populateAISel()
+    }
+    if(name==='dashboard'){
+        setTimeout(()=>initDashMap(),150)
+    }
+}
+
+/* ════════════════════════
+   BOOT
+════════════════════════ */
+async function init(){
+    const [rayons,mahallas,pop] = await Promise.all([loadRayons(),loadMahallas(),loadPopStats()])
+    renderStatsBar(rayons,mahallas,pop)
+    renderDashRayonsList(rayons)
+    renderDashMahallasList(mahallas)
+    renderSocialStats(pop)
+    renderInfraMini(pop)
+    setTimeout(()=>{
+        buildBarChart(rayons)
+        buildPieChart(mahallas)
+        buildEmployChart()
+        initDashMap()
+    },100)
+}
+
+init()
+</script>
+</body>
+</html>

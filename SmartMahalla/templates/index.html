@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Цифровая платформа мониторинга махаллинских сходов и районов</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#020617',
+                            panel: '#0f172a',
+                            border: '#1e293b',
+                            neonBlue: '#00f0ff',
+                            neonGreen: '#39ff14',
+                            neonOrange: '#ff007f',
+                            neonYellow: '#fffb00'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Leaflet Draw CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <!-- ApexCharts -->
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <!-- FontAwesome для иконок -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        /* Стилизация под киберпанк и кастомизация скроллбара */
+        body {
+            background-color: #020617;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            color: #f1f5f9;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #020617;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00f0ff;
+        }
+        .neon-shadow-blue {
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.2);
+        }
+        .neon-border-blue {
+            border-color: rgba(0, 240, 255, 0.4);
+        }
+        /* Адаптация инструментов рисования под темную тему */
+        .leaflet-bar {
+            border: 1px solid #1e293b !important;
+            background: #0f172a !important;
+        }
+        .leaflet-bar a {
+            background-color: #0f172a !important;
+            color: #00f0ff !important;
+            border-bottom: 1px solid #1e293b !important;
+        }
+        .leaflet-bar a:hover {
+            background-color: #1e293b !important;
+            color: #39ff14 !important;
+        }
+    </style>
+</head>
+<body class="p-2 sm:p-4 min-h-screen flex flex-col">
+
+    <!-- ВЕРХНЯЯ ИНФОРМАЦИОННАЯ ПАНЕЛЬ -->
+    <header class="relative flex flex-col md:flex-row justify-between items-center bg-slate-900 border-b border-cyan-500/30 px-6 py-3 rounded-t-xl gap-4 neon-shadow-blue">
+        <!-- Фоновое свечение -->
+        <div class="absolute inset-0 bg-gradient-to-r from-blue-900/10 via-cyan-900/5 to-purple-900/10 pointer-events-none rounded-t-xl"></div>
+
+        <!-- Заголовок и логотип -->
+        <div class="flex items-center space-x-4 z-10">
+            <div class="p-2 bg-cyan-950 border border-cyan-500/50 rounded-lg text-cyan-400 animate-pulse">
+                <i class="fa-solid fa-server text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl md:text-2xl font-extrabold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400">
+                    ЦИФРОВАЯ ПЛАТФОРМА МОНИТОРИНГА РАЙОНОВ И МАХАЛЛЕ УЗБЕКИСТАНА
+                </h1>
+                <p class="text-xs text-cyan-500/80 font-mono">INTELLIGENT DISTRICT AND MAHALLA DIGITAL TWIN Cockpit</p>
+            </div>
+        </div>
+
+        <!-- Центральный баннер с лозунгом -->
+        <div class="hidden lg:flex flex-col items-center justify-center border-x border-cyan-500/20 px-8 py-1 z-10">
+            <span class="text-2xl font-extrabold text-rose-500 tracking-widest font-serif">СИЛА — В ЕДИНСТВЕ!</span>
+            <span class="text-[10px] text-gray-400 font-mono tracking-widest">РАЗВИТИЕ НОВОГО УЗБЕКИСТАНА</span>
+        </div>
+
+        <!-- Кнопки управления и подключение -->
+        <div class="flex flex-wrap items-center gap-4 z-10">
+            <!-- Переключатель режима API -->
+            <div class="bg-slate-950 border border-slate-800 p-1 rounded-lg flex items-center">
+                <button id="btnMockMode" onclick="toggleApiMode('mock')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-300 bg-cyan-500 text-slate-950">
+                    <i class="fa-solid fa-database mr-1"></i> Режим симуляции (Mock)
+                </button>
+                <button id="btnApiMode" onclick="toggleApiMode('live')" class="px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-300 text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-wifi mr-1"></i> Live Django API
+                </button>
+            </div>
+            <!-- Индикатор сети -->
+            <div class="flex items-center space-x-2 bg-slate-950 px-3 py-2 border border-slate-800 rounded-lg">
+                <span class="relative flex h-2 w-2">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                </span>
+                <span class="text-xs font-mono text-emerald-400" id="status-label">ОНЛАЙН</span>
+            </div>
+            <!-- Текущее время -->
+            <div class="text-xs font-mono text-cyan-400 bg-cyan-950/40 px-3 py-2 border border-cyan-900/50 rounded-lg">
+                <i class="fa-regular fa-clock mr-1"></i> <span id="current-time">2026-05-15 17:37:48</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- СЕТКА ОСНОВНОГО ИНТЕРФЕЙСА -->
+    <main class="grid grid-cols-1 xl:grid-cols-4 gap-4 mt-4 flex-1">
+
+        <!-- ================== ЛЕВАЯ ПАНЕЛЬ: НАСЕЛЕНИЕ И ЗАНЯТОСТЬ ================== -->
+        <section class="xl:col-span-1 flex flex-col gap-4">
+
+            <!-- Основные статистические показатели -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl relative overflow-hidden neon-shadow-blue">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-cyan-500/5 rounded-full filter blur-xl"></div>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-wider"><i class="fa-solid fa-users mr-1"></i> Население и Занятость</h3>
+                    <span class="text-[10px] bg-cyan-900/50 text-cyan-300 px-2 py-0.5 rounded border border-cyan-800">Динамика</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-gray-400 text-[10px] block uppercase">Общее население</span>
+                        <span class="text-xl font-black text-cyan-400 font-mono" id="stat-aholi-soni">0</span>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-gray-400 text-[10px] block uppercase">Кол-во семей</span>
+                        <span class="text-xl font-black text-emerald-400 font-mono" id="stat-oilalar-soni">0</span>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-gray-400 text-[10px] block uppercase">Занятые</span>
+                        <span class="text-xl font-black text-blue-400 font-mono" id="stat-band-aholi">0</span>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-gray-400 text-[10px] block uppercase">Безработные</span>
+                        <span class="text-xl font-black text-rose-500 font-mono" id="stat-ishsizlar-soni">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Круговые диаграммы уровня бедности и безработицы -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-col">
+                <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-wider mb-2"><i class="fa-solid fa-chart-pie mr-1"></i> Показатели благосостояния</h3>
+                <div class="grid grid-cols-2 gap-2 flex-1 items-center">
+                    <div class="flex flex-col items-center justify-center">
+                        <div id="chart-poverty-gauge"></div>
+                        <span class="text-xs text-gray-400 -mt-2">Уровень бедности</span>
+                    </div>
+                    <div class="flex flex-col items-center justify-center">
+                        <div id="chart-unemployment-gauge"></div>
+                        <span class="text-xs text-gray-400 -mt-2">Безработица (Реал.)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Распределение занятости по секторам -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-wider mb-2"><i class="fa-solid fa-briefcase mr-1"></i> Распределение по секторам</h3>
+                <div id="chart-employment-sectors" class="h-48"></div>
+            </div>
+
+            <!-- Социальная защита и миграция -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl flex-1 min-h-[220px]">
+                <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-shield-halved mr-1"></i> Соцзащита и Миграция</h3>
+                <div class="space-y-2.5">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-400">Нуждающиеся в соцзащите</span>
+                            <span class="text-cyan-400 font-bold font-mono" id="stat-muhtoj">0 чел.</span>
+                        </div>
+                        <div class="w-full bg-slate-950 rounded-full h-1.5 border border-slate-800">
+                            <div class="bg-gradient-to-r from-cyan-500 to-blue-500 h-1.5 rounded-full" id="bar-muhtoj" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-400">Малообеспеченные семьи</span>
+                            <span class="text-emerald-400 font-bold font-mono" id="stat-kam-taminlangan">0 сем.</span>
+                        </div>
+                        <div class="w-full bg-slate-950 rounded-full h-1.5 border border-slate-800">
+                            <div class="bg-gradient-to-r from-emerald-500 to-teal-500 h-1.5 rounded-full" id="bar-kam-taminlangan" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-gray-400">Трудовые мигранты (за рубежом)</span>
+                            <span class="text-amber-400 font-bold font-mono" id="stat-migrantlar">0 чел.</span>
+                        </div>
+                        <div class="w-full bg-slate-950 rounded-full h-1.5 border border-slate-800">
+                            <div class="bg-gradient-to-r from-amber-500 to-orange-500 h-1.5 rounded-full" id="bar-migrantlar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/60">
+                        <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                            <span class="text-[9px] text-gray-500 block">Средняя зарплата</span>
+                            <span class="text-xs font-bold text-teal-400 font-mono" id="stat-maosh">0 UZS</span>
+                        </div>
+                        <div class="bg-slate-950 p-2 rounded border border-slate-800">
+                            <span class="text-[9px] text-gray-500 block">Тяжелые заболевания</span>
+                            <span class="text-xs font-bold text-rose-400 font-mono" id="stat-ogir-kasal">0 случ.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================== ЦЕНТРАЛЬНАЯ ПАНЕЛЬ: КАРТА И УПРАВЛЕНИЕ ================== -->
+        <section class="xl:col-span-2 flex flex-col gap-4">
+
+            <!-- Кнопки управления и быстрого перехода -->
+            <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl flex flex-wrap items-center justify-between gap-3">
+                <div class="flex items-center space-x-2">
+                    <span class="bg-cyan-500/10 text-cyan-400 p-1.5 rounded border border-cyan-800 text-xs font-bold">НАВИГАЦИЯ:</span>
+                    <button onclick="zoomToDefault()" class="px-3 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 text-xs rounded transition text-gray-300">
+                        <i class="fa-solid fa-earth-central-asia mr-1"></i> Сбросить карту к начальной
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <!-- Кнопки открытия модальных окон добавления -->
+                    <button onclick="openCreateModal('rayon')" class="px-3 py-1.5 bg-cyan-500 hover:bg-cyan-600 text-slate-950 text-xs font-black rounded-lg transition-all shadow-md">
+                        <i class="fa-solid fa-plus-circle mr-1"></i> Добавить Район
+                    </button>
+                    <button onclick="openCreateModal('mahalla')" class="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black rounded-lg transition-all shadow-md">
+                        <i class="fa-solid fa-map-pin mr-1"></i> Добавить Махаллю
+                    </button>
+                </div>
+            </div>
+
+            <!-- ИНТЕРАКТИВНАЯ КАРТА -->
+            <div class="bg-slate-900 border border-cyan-950/50 p-1 rounded-xl relative flex-1 min-h-[480px] flex flex-col neon-shadow-blue">
+                <!-- Декоративные рамки в футуристичном стиле -->
+                <div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-cyan-500 rounded-tl-lg pointer-events-none"></div>
+                <div class="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-cyan-500 rounded-tr-lg pointer-events-none"></div>
+                <div class="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-cyan-500 rounded-bl-lg pointer-events-none"></div>
+                <div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-cyan-500 rounded-br-lg pointer-events-none"></div>
+
+                <!-- Контейнер Leaflet -->
+                <div id="map" class="w-full flex-1 rounded-lg z-0"></div>
+
+                <!-- Подсказка по рисованию полигонов -->
+                <div id="draw-helper" class="absolute bottom-3 left-3 bg-slate-950/90 border border-cyan-500/30 p-2.5 rounded-lg text-xs max-w-sm hidden z-[1000] backdrop-blur-sm">
+                    <div class="flex items-center justify-between font-bold text-cyan-400 mb-1">
+                        <span><i class="fa-solid fa-pencil mr-1"></i> Рисование полигона активно</span>
+                        <button onclick="cancelDrawing()" class="text-rose-500 hover:text-rose-400"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <p class="text-gray-300 text-[11px]">Кликните на инструмент в левом верхнем углу карты, чтобы начать отмечать границу. Завершите двойным щелчком.</p>
+                </div>
+
+                <!-- Текущая зона аудита -->
+                <div class="absolute top-3 left-12 bg-slate-950/95 border border-slate-800 px-4 py-2 rounded-lg shadow-2xl z-[1000] backdrop-blur-md">
+                    <span class="text-[10px] text-gray-400 block uppercase font-mono">Область аудита:</span>
+                    <h4 class="text-sm font-black text-cyan-400 tracking-wider flex items-center" id="active-hudud-label">
+                        <i class="fa-solid fa-map mr-1.5"></i> Каракалпакстан (Все регионы)
+                    </h4>
+                </div>
+            </div>
+
+            <!-- ТАБЛИЦА ОБЪЕКТОВ -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-wider"><i class="fa-solid fa-list-check mr-1.5"></i> Список территорий</h3>
+                    <div class="flex gap-2">
+                        <input id="search-hudud" oninput="filterHududTable()" type="text" placeholder="Поиск..." class="bg-slate-950 border border-slate-800 text-xs px-3 py-1.5 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500" />
+                    </div>
+                </div>
+                <div class="overflow-x-auto max-h-[160px]">
+                    <table class="w-full text-xs text-left text-gray-400">
+                        <thead class="bg-slate-950 text-gray-300 sticky top-0 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                            <tr>
+                                <th class="p-2.5">Цвет</th>
+                                <th class="p-2.5">Название</th>
+                                <th class="p-2.5">Район</th>
+                                <th class="p-2.5">Население</th>
+                                <th class="p-2.5">Инвестиции</th>
+                                <th class="p-2.5 text-right">Действие</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hudud-table-body" class="divide-y divide-slate-800/40">
+                            <!-- Заполняется динамически -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================== ПРАВАЯ ПАНЕЛЬ: АНАЛИЗ ИНФРАСТРУКТУРЫ И СУНЬИЙ ИНТЕЛЛЕКТ ================== -->
+        <section class="xl:col-span-1 flex flex-col gap-4">
+
+            <!-- Индекс инфраструктуры и земельных угодий -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl relative overflow-hidden neon-shadow-blue">
+                <div class="absolute top-0 right-0 w-24 h-24 bg-emerald-500/5 rounded-full filter blur-xl"></div>
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-bold text-emerald-400 uppercase tracking-wider"><i class="fa-solid fa-industry mr-1"></i> Инфраструктура и Земля</h3>
+                    <span class="text-[10px] bg-emerald-900/50 text-emerald-300 px-2 py-0.5 rounded border border-emerald-800">Индекс</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-gray-400 text-[10px] block uppercase">Плотность (чел/км²)</span>
+                        <span class="text-xl font-black text-emerald-400 font-mono" id="stat-zichlik">0</span>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-gray-400 text-[10px] block uppercase">Протяженность дорог</span>
+                        <span class="text-xl font-black text-yellow-400 font-mono" id="stat-yollar">0 км</span>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-gray-400 text-[10px] block uppercase">Привлечено инв.</span>
+                        <span class="text-xl font-black text-cyan-400 font-mono" id="stat-invest">0%</span>
+                    </div>
+                    <div class="bg-slate-950 p-2.5 rounded-lg border border-slate-800">
+                        <span class="text-gray-400 text-[10px] block uppercase">Орошаемые земли</span>
+                        <span class="text-xl font-black text-indigo-400 font-mono" id="stat-suv-er">0 га</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Уровень коммунальных услуг -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-wider mb-2"><i class="fa-solid fa-bolt mr-1"></i> Коммунальные службы</h3>
+                <div id="chart-utilities" class="h-48"></div>
+            </div>
+
+            <!-- Статистика развития инфраструктуры -->
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-xl">
+                <h3 class="text-sm font-bold text-cyan-400 uppercase tracking-wider mb-3"><i class="fa-solid fa-compass-drafting mr-1"></i> Состояние инфраструктуры</h3>
+                <div class="space-y-3">
+                    <div class="flex items-start space-x-3 bg-slate-950 p-2 rounded border border-slate-800">
+                        <div class="p-1.5 bg-yellow-500/10 text-yellow-400 rounded border border-yellow-500/30">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-500 uppercase block">Перебои электроэнергии / год</span>
+                            <span class="text-xs font-bold text-yellow-500 font-mono" id="stat-elektr-uzilish">0 раз</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3 bg-slate-950 p-2 rounded border border-slate-800">
+                        <div class="p-1.5 bg-emerald-500/10 text-emerald-400 rounded border border-emerald-500/30">
+                            <i class="fa-solid fa-road"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-500 uppercase block">Доля асфальтированных дорог</span>
+                            <span class="text-xs font-bold text-emerald-400 font-mono" id="stat-asfalt-ulush">0%</span>
+                        </div>
+                    </div>
+                    <div class="flex items-start space-x-3 bg-slate-950 p-2 rounded border border-slate-800">
+                        <div class="p-1.5 bg-blue-500/10 text-blue-400 rounded border border-blue-500/30">
+                            <i class="fa-solid fa-wifi"></i>
+                        </div>
+                        <div>
+                            <span class="text-[10px] text-gray-500 uppercase block">Качество интернет-покрытия</span>
+                            <span class="text-xs font-bold text-blue-400 font-mono" id="stat-internet">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ИИ СИМУЛЯЦИЯ БИЗНЕС-ЛОГОК (ИЗ ПРЕЗЕНТАЦИИ СТРАНИЦЫ 3-68) -->
+            <div class="bg-gradient-to-br from-slate-900 to-indigo-950/50 border border-indigo-500/30 p-4 rounded-xl flex-1 flex flex-col justify-between neon-shadow-blue min-h-[250px]">
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h3 class="text-sm font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-indigo-400 uppercase tracking-wider flex items-center">
+                            <i class="fa-solid fa-brain mr-1.5 animate-pulse text-cyan-400"></i> Рекомендации ИИ
+                        </h3>
+                        <span class="text-[9px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full border border-indigo-500/30 font-mono">API AI JSON</span>
+                    </div>
+                    <p class="text-[11px] text-gray-300 mb-3">ИИ выбирает подходящий бизнес-проект по инфраструктурному профилю махалли (на базе страниц 3–68 руководства).</p>
+                </div>
+
+                <!-- Вывод слайда бизнес-плана -->
+                <div id="ai-slide-container" class="bg-slate-950 p-3 rounded-lg border border-slate-800/80 mb-3 flex-1 flex flex-col justify-center">
+                    <div class="text-center text-gray-500 text-xs py-4" id="ai-placeholder">
+                        <i class="fa-solid fa-magnifying-glass-chart text-2xl mb-2 text-indigo-400/50 block"></i>
+                        Выберите махаллю для анализа и составления бизнес-рекомендаций
+                    </div>
+                    <div id="ai-active-slide" class="hidden flex flex-col h-full justify-between">
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-[9px] text-cyan-400 font-mono" id="ai-slide-number">СЛАЙД #12</span>
+                                <span class="text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded font-bold font-mono" id="ai-slide-poverty-impact">Снижение бедности: -12%</span>
+                            </div>
+                            <h4 class="text-sm font-bold text-white uppercase tracking-wider" id="ai-slide-title">МЕВА-САБЗАВОТ САКЛАШ ОМБОРХОНАСИ</h4>
+                            <p class="text-[11px] text-gray-400 mt-1 line-clamp-3" id="ai-slide-desc">Перспективный сценарий малого бизнеса на основе существующей ресурсной базы махалли.</p>
+                        </div>
+                        <div class="mt-2 pt-2 border-t border-slate-900 flex justify-between items-center">
+                            <div>
+                                <span class="text-[9px] text-gray-500 block">Ожид. доход / год</span>
+                                <span class="text-[11px] font-bold text-emerald-400 font-mono" id="ai-slide-profit">120 млн UZS</span>
+                            </div>
+                            <div>
+                                <span class="text-[9px] text-gray-500 block">Новые рабочие места</span>
+                                <span class="text-[11px] font-bold text-cyan-400 font-mono" id="ai-slide-jobs">15 мест</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="generateRandomAISlide()" class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-lg text-xs transition duration-200 shadow-md flex items-center justify-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Подобрать другую идею
+                </button>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- ПОДВАЛ И ЛИЦЕНЗИЯ -->
+    <footer class="mt-4 py-3 bg-slate-900 border-t border-slate-800 rounded-b-xl flex flex-col sm:flex-row justify-between items-center px-6 gap-3 text-xs text-gray-500">
+        <div>
+            <span>&copy; 2026 Центр цифрового развития махалли и районов. Все права защищены.</span>
+        </div>
+        <div class="flex space-x-4 font-mono text-[11px]">
+            <span class="text-cyan-500/80">LATITUDE: 42.4601&deg; N</span>
+            <span class="text-cyan-500/80">LONGITUDE: 59.6133&deg; E</span>
+            <span class="text-cyan-500/80">QORAQALPOG'ISTON COCKPIT</span>
+        </div>
+    </footer>
+
+    <!-- ================== МОДАЛЬНЫЕ ОКНА СОЗДАНИЯ ОБЪЕКТОВ ================== -->
+    <!-- ДОБАВЛЕНИЕ РАЙОНА -->
+    <div id="modal-rayon" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 hidden z-[2000] backdrop-blur-sm">
+        <div class="bg-slate-900 border border-cyan-500/40 p-6 rounded-xl w-full max-w-md relative neon-shadow-blue">
+            <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-3 flex items-center">
+                <i class="fa-solid fa-plus-circle text-cyan-400 mr-2"></i> Создать Район
+            </h3>
+            <form id="form-rayon" onsubmit="handleRayonCreation(event)" class="space-y-4 mt-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Название Района</label>
+                    <input id="new-rayon-name" type="text" required placeholder="Например: Нукусский район" class="w-full bg-slate-950 border border-slate-800 text-xs p-2.5 rounded text-white focus:outline-none focus:border-cyan-500" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Регион (Область)</label>
+                    <input id="new-rayon-region" type="text" value="Каракалпакстан" class="w-full bg-slate-950 border border-slate-800 text-xs p-2.5 rounded text-white focus:outline-none focus:border-cyan-500" />
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Координаты полигона (JSON)</label>
+                    <textarea id="new-rayon-plot" placeholder="Это поле автоматически заполнится, когда вы нарисуете границы района на карте" readonly class="w-full bg-slate-950 border border-slate-800 text-xs p-2.5 rounded text-cyan-400 h-20 focus:outline-none focus:border-cyan-500 font-mono"></textarea>
+                    <span class="text-[10px] text-cyan-500 italic block mt-1"><i class="fa-solid fa-info-circle mr-1"></i> Закройте это окно и кликните по кнопке рисования полигона слева на карте!</span>
+                </div>
+                <div class="flex justify-end space-x-3 pt-3 border-t border-slate-800">
+                    <button type="button" onclick="closeModal('rayon')" class="px-4 py-2 bg-slate-850 hover:bg-slate-800 border border-slate-800 text-xs rounded font-bold text-white transition">Отмена</button>
+                    <button type="submit" class="px-4 py-2 bg-cyan-500 hover:bg-cyan-600 text-slate-950 text-xs font-black rounded transition">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ДОБАВЛЕНИЕ МАХАЛЛИ -->
+    <div id="modal-mahalla" class="fixed inset-0 bg-black/80 flex items-center justify-center p-4 hidden z-[2000] backdrop-blur-sm">
+        <div class="bg-slate-900 border border-emerald-500/40 p-6 rounded-xl w-full max-w-2xl relative neon-shadow-blue max-h-[90vh] overflow-y-auto">
+            <h3 class="text-lg font-bold text-white border-b border-slate-800 pb-3 flex items-center">
+                <i class="fa-solid fa-map-pin text-emerald-400 mr-2"></i> Создать Махаллю
+            </h3>
+            <form id="form-mahalla" onsubmit="handleMahallaCreation(event)" class="space-y-4 mt-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-emerald-400 border-b border-slate-800/80 pb-1">Основные сведения</h4>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Название Схода (МФЙ)</label>
+                            <input id="new-mahalla-name" type="text" required placeholder="Например: Дустлик МФЙ" class="w-full bg-slate-950 border border-slate-800 text-xs p-2.5 rounded text-white focus:outline-none focus:border-emerald-500" />
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Привязка к району</label>
+                            <select id="new-mahalla-rayon" required class="w-full bg-slate-950 border border-slate-800 text-xs p-2.5 rounded text-white focus:outline-none focus:border-emerald-500">
+                                <!-- Загружается динамически -->
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Описание махалли</label>
+                            <textarea id="new-mahalla-description" placeholder="Дополнительная информация..." class="w-full bg-slate-950 border border-slate-800 text-xs p-2 rounded text-white h-14 focus:outline-none focus:border-emerald-500"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Границы (JSON)</label>
+                            <textarea id="new-mahalla-plot" placeholder="Это поле автоматически заполнится при черчении махалли на карте" readonly class="w-full bg-slate-950 border border-slate-800 text-xs p-2 rounded text-emerald-400 h-14 focus:outline-none focus:border-emerald-500 font-mono"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-emerald-400 border-b border-slate-800/80 pb-1">Показатели AVB (Население)</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase">Общее население</label>
+                                <input id="new-avb-aholi" type="number" value="1200" class="w-full bg-slate-950 border border-slate-800 text-xs p-2 rounded text-white" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase">Число семей</label>
+                                <input id="new-avb-oilalar" type="number" value="350" class="w-full bg-slate-950 border border-slate-800 text-xs p-2 rounded text-white" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase">Занятые люди</label>
+                                <input id="new-avb-band" type="number" value="720" class="w-full bg-slate-950 border border-slate-800 text-xs p-2 rounded text-white" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase">Безработные люди</label>
+                                <input id="new-avb-ishsiz" type="number" value="85" class="w-full bg-slate-950 border border-slate-800 text-xs p-2 rounded text-white" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase">Средний доход</label>
+                                <input id="new-avb-maosh" type="number" value="3200000" class="w-full bg-slate-950 border border-slate-800 text-xs p-2 rounded text-white" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase">Соц. поддержка</label>
+                                <input id="new-avb-muhtoj" type="number" value="45" class="w-full bg-slate-950 border border-slate-800 text-xs p-2 rounded text-white" />
+                            </div>
+                        </div>
+
+                        <h4 class="text-xs font-bold text-emerald-400 border-b border-slate-800/80 pb-1 mt-3">Инфраструктура</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase">Асфальт дороги (%)</label>
+                                <input id="new-infra-asfalt" type="number" value="65" max="100" class="w-full bg-slate-950 border border-slate-800 text-xs p-2 rounded text-white" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase">Длина дорог (км)</label>
+                                <input id="new-infra-yollar" type="number" value="28" class="w-full bg-slate-950 border border-slate-800 text-xs p-2 rounded text-white" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase">Газоснабжение (%)</label>
+                                <input id="new-infra-gaz" type="number" value="80" max="100" class="w-full bg-slate-950 border border-slate-800 text-xs p-2 rounded text-white" />
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase">Чистая вода (%)</label>
+                                <input id="new-infra-suv" type="number" value="70" max="100" class="w-full bg-slate-950 border border-slate-800 text-xs p-2 rounded text-white" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3 pt-4 border-t border-slate-800">
+                    <button type="button" onclick="closeModal('mahalla')" class="px-4 py-2 bg-slate-850 hover:bg-slate-800 border border-slate-800 text-xs rounded font-bold text-white transition">Отмена</button>
+                    <button type="submit" class="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-slate-950 text-xs font-black rounded transition">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================== КОД ДВИЖКА И ЛОГИКИ КАРТЫ ================== -->
+    <script>
+        // Конфигурация системы
+        let currentMode = "mock"; // 'mock' или 'live'
+        let apiBaseUrl = window.location.origin + "/api";
+
+        // Хранилища данных
+        let rayons = [];
+        let mahallas = [];
+        let avbData = [];
+        let infraData = [];
+
+        // Интерактивное состояние интерфейса
+        let selectedRayonId = null;
+        let selectedMahallaId = null;
+        let map, drawControl, currentDrawType = null;
+        let drawnLayers = new L.FeatureGroup();
+        let mapLayerGroup = L.layerGroup();
+
+        // Экземпляры графиков ApexCharts
+        let chartPoverty, chartUnemployment, chartSectors, chartUtilities;
+
+        // База бизнес-проектов из презентации (слайды 3-68)
+        const businessSlides = {
+            3: { title: "Тепличное овощеводство", desc: "Комплекс выращивания помидоров и огурцов методом современной гидропоники.", profit: "85 млн", jobs: "6", reduction: "-5%" },
+            4: { title: "Производство мебели", desc: "Цех по изготовлению качественной офисной и домашней мебели из локального сырья.", profit: "140 млн", jobs: "12", reduction: "-8%" },
+            7: { title: "Птицеферма мини-формата", desc: "Автоматизированный мини-инкубатор для разведения птицы и получения диетического мяса.", profit: "60 млн", jobs: "4", reduction: "-4%" },
+            12: { title: "Холодильный склад хранения", desc: "Логистический склад охлаждения мощностью 500 тонн для сохранения урожая овощей и фруктов.", profit: "190 млн", jobs: "15", reduction: "-11%" },
+            18: { title: "Кластер стройматериалов", desc: "Производство шлакоблоков, гипсокартона и декоративного кирпича непосредственно в махалле.", profit: "220 млн", jobs: "25", reduction: "-15%" },
+            24: { title: "Сушка овощей и фруктов", desc: "Линия дегидратации плодоовощной продукции, упаковка и подготовка к экспорту.", profit: "110 млн", jobs: "8", reduction: "-6%" },
+            31: { title: "Швейный цех и ателье", desc: "Организация надомного труда женщин для пошива национальной и современной одежды.", profit: "75 млн", jobs: "18", reduction: "-10%" },
+            40: { title: "Теплоизоляция на базе базальта", desc: "Производство энергоэффективных покрытий из базальтового волокна для нужд строительства.", profit: "310 млн", jobs: "30", reduction: "-18%" },
+            48: { title: "Упаковка и фасовка горного меда", desc: "Цех фильтрации, брендирования и фасовки натурального горного меда.", profit: "45 млн", jobs: "3", reduction: "-3%" },
+            55: { title: "Переработка молока", desc: "Сбор сырья у населения и изготовление кефира, сыров, сметаны на мини-заводе.", profit: "95 млн", jobs: "10", reduction: "-7%" },
+            62: { title: "Эко-туристический лагерь", desc: "Обустройство легких конструкций и юрт для привлечения туристов в живописные локации.", profit: "180 млн", jobs: "22", reduction: "-13%" },
+            68: { title: "Мини-пекарня и кондитерский цех", desc: "Производство свежего хлеба, лепешек и кондитерских изделий для утренней доставки.", profit: "50 млн", jobs: "5", reduction: "-4%" }
+        };
+
+        // Запуск при загрузке страницы
+        window.onload = function() {
+            // Электронные часы
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('current-time').innerText = now.toISOString().replace('T', ' ').substring(0, 19);
+            }, 1000);
+
+            initMap();
+            initCharts();
+            toggleApiMode('mock'); // По умолчанию загружаем тестовые данные
+        };
+
+        // Инициализация интерактивной карты
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: true,
+                attributionControl: false
+            }).setView([42.4601, 59.6133], 8);
+
+            // Темные высокотехнологичные плитки карты
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                maxZoom: 20
+            }).addTo(map);
+
+            map.addLayer(drawnLayers);
+
+            // Инициализация Leaflet Draw для черчения областей
+            drawControl = new L.Control.Draw({
+                draw: {
+                    polygon: {
+                        allowIntersection: false,
+                        shapeOptions: {
+                            color: '#00f0ff',
+                            fillColor: '#00f0ff',
+                            fillOpacity: 0.2
+                        }
+                    },
+                    polyline: false,
+                    rectangle: false,
+                    circle: false,
+                    marker: false,
+                    circlemarker: false
+                },
+                edit: {
+                    featureGroup: drawnLayers,
+                    remove: false
+                }
+            });
+            map.addControl(drawControl);
+
+            // Обработка нарисованных объектов
+            map.on(L.Draw.Event.CREATED, function (e) {
+                const layer = e.layer;
+                drawnLayers.clearLayers();
+                drawnLayers.addLayer(layer);
+
+                // Извлечение координат полигона
+                const latlngs = layer.getLatLngs()[0];
+                const coordinates = latlngs.map(pt => [pt.lng, pt.lat]);
+                // Замыкание контура полигона
+                coordinates.push(coordinates[0]);
+
+                const plotGeoJSON = {
+                    type: "Polygon",
+                    coordinates: [coordinates]
+                };
+
+                const geoJsonString = JSON.stringify(plotGeoJSON);
+
+                // Запись координат в поля соответствующей формы
+                if (currentDrawType === 'rayon') {
+                    document.getElementById('new-rayon-plot').value = geoJsonString;
+                } else if (currentDrawType === 'mahalla') {
+                    document.getElementById('new-mahalla-plot').value = geoJsonString;
+                }
+
+                // Скрытие баннера-подсказки рисования
+                document.getElementById('draw-helper').classList.add('hidden');
+
+                // Возврат к заполнению формы
+                if (currentDrawType) {
+                    openModal(currentDrawType);
+                }
+            });
+        }
+
+        // Настройка графиков ApexCharts
+        function initCharts() {
+            // Уровень бедности
+            chartPoverty = new ApexCharts(document.querySelector("#chart-poverty-gauge"), {
+                chart: { height: 160, type: 'radialBar' },
+                series: [0],
+                colors: ["#ff007f"],
+                plotOptions: {
+                    radialBar: {
+                        hollow: { size: '60%' },
+                        dataLabels: {
+                            name: { show: false },
+                            value: {
+                                color: '#fff',
+                                fontSize: '18px',
+                                show: true,
+                                formatter: function (val) { return val + "%" }
+                            }
+                        }
+                    }
+                }
+            });
+            chartPoverty.render();
+
+            // Безработица
+            chartUnemployment = new ApexCharts(document.querySelector("#chart-unemployment-gauge"), {
+                chart: { height: 160, type: 'radialBar' },
+                series: [0],
+                colors: ["#fffb00"],
+                plotOptions: {
+                    radialBar: {
+                        hollow: { size: '60%' },
+                        dataLabels: {
+                            name: { show: false },
+                            value: {
+                                color: '#fff',
+                                fontSize: '18px',
+                                show: true,
+                                formatter: function (val) { return val + "%" }
+                            }
+                        }
+                    }
+                }
+            });
+            chartUnemployment.render();
+
+            // Занятость по секторам
+            chartSectors = new ApexCharts(document.querySelector("#chart-employment-sectors"), {
+                chart: { type: 'bar', height: '100%', toolbar: { show: false } },
+                series: [{ name: 'Занятые жители', data: [0, 0, 0] }],
+                colors: ['#00f0ff'],
+                plotOptions: {
+                    bar: { borderRadius: 4, horizontal: true }
+                },
+                xaxis: {
+                    categories: ['Офиц. сектор', 'Неофиц. сектор', 'Молодежь'],
+                    labels: { style: { colors: '#94a3b8' } }
+                },
+                yaxis: { labels: { style: { colors: '#94a3b8' } } },
+                grid: { borderColor: '#1e293b' }
+            });
+            chartSectors.render();
+
+            // Коммунальное покрытие
+            chartUtilities = new ApexCharts(document.querySelector("#chart-utilities"), {
+                chart: { type: 'bar', height: '100%', toolbar: { show: false } },
+                series: [{ name: 'Покрытие %', data: [0, 0, 0] }],
+                colors: ['#39ff14'],
+                plotOptions: {
+                    bar: { columnWidth: '55%', borderRadius: 4 }
+                },
+                xaxis: {
+                    categories: ['Чистая вода', 'Природный газ', 'Дороги'],
+                    labels: { style: { colors: '#94a3b8' } }
+                },
+                yaxis: { max: 100, labels: { style: { colors: '#94a3b8' } } },
+                grid: { borderColor: '#1e293b' }
+            });
+            chartUtilities.render();
+        }
+
+        // Переключение источника данных (Локальный Mock / Реальный API)
+        function toggleApiMode(mode) {
+            currentMode = mode;
+            const btnMock = document.getElementById('btnMockMode');
+            const btnApi = document.getElementById('btnApiMode');
+            const statusLabel = document.getElementById('status-label');
+
+            if (mode === 'mock') {
+                btnMock.className = "px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-300 bg-cyan-500 text-slate-950";
+                btnApi.className = "px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-300 text-slate-400 hover:text-white";
+                statusLabel.innerText = "РЕЖИМ СИМУЛЯЦИИ (MOCK)";
+                statusLabel.className = "text-xs font-mono text-cyan-400";
+                loadMockData();
+            } else {
+                btnApi.className = "px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-300 bg-emerald-500 text-slate-950";
+                btnMock.className = "px-3 py-1.5 text-xs font-bold rounded-md transition-all duration-300 text-slate-400 hover:text-white";
+                statusLabel.innerText = "ПОДКЛЮЧЕНИЕ К DJANGO...";
+                statusLabel.className = "text-xs font-mono text-emerald-400";
+                loadLiveData();
+            }
+        }
+
+        // ================== ГЕНЕРАТОР ТЕСТОВЫХ ДАННЫХ ==================
+        function loadMockData() {
+            mapLayerGroup.clearLayers();
+            drawnLayers.clearLayers();
+
+            // 1. Районы (Mock)
+            rayons = [
+                { id: 1, name: "Нукусский район", region: "Каракалпакстан", is_active: true, plot: { type: "Polygon", coordinates: [[[59.50, 42.40], [59.75, 42.40], [59.75, 42.60], [59.50, 42.60], [59.50, 42.40]]] } },
+                { id: 2, name: "Амударьинский район", region: "Каракалпакстан", is_active: true, plot: { type: "Polygon", coordinates: [[[60.00, 42.10], [60.25, 42.10], [60.25, 42.30], [60.00, 42.30], [60.00, 42.10]]] } },
+                { id: 3, name: "Кегейлийский район", region: "Каракалпакстан", is_active: true, plot: { type: "Polygon", coordinates: [[[59.55, 42.70], [59.85, 42.70], [59.85, 42.90], [59.55, 42.90], [59.55, 42.70]]] } }
+            ];
+
+            // 2. Махалли (Mock)
+            mahallas = [
+                { id: 10, rayon: 1, name: "Дустлик МФЙ", description: "Зеленая зона, хорошо развито тепличное овощеводство.", is_active: true, plot: { type: "Polygon", coordinates: [[[59.52, 42.42], [59.60, 42.42], [59.60, 42.48], [59.52, 42.48], [59.52, 42.42]]] } },
+                { id: 11, rayon: 1, name: "Галлакор МФЙ", description: "Сельскохозяйственный кластер у водохранилища.", is_active: true, plot: { type: "Polygon", coordinates: [[[59.61, 42.42], [59.72, 42.42], [59.72, 42.50], [59.61, 42.50], [59.61, 42.42]]] } },
+                { id: 12, rayon: 2, name: "Карамон МФЙ", description: "Животноводческие хозяйства и хлопковые поля.", is_active: true, plot: { type: "Polygon", coordinates: [[[60.02, 42.12], [60.12, 42.12], [60.12, 42.22], [60.02, 42.22], [60.02, 42.12]]] } },
+                { id: 13, rayon: 3, name: "Абад МФЙ", description: "Территория с обновленной дорожной сетью.", is_active: true, plot: { type: "Polygon", coordinates: [[[59.60, 42.72], [59.70, 42.72], [59.70, 42.82], [59.60, 42.82], [59.60, 42.72]]] } }
+            ];
+
+            // 3. Население и занятость (AVB)
+            avbData = [
+                { id: 20, mahalla: 10, aholi_soni: 2450, oylalar_soni: 620, honadonlar_soni: 550, kambagallik_darajasi: 15, rasmiy_ishsizlik_darajasi: 8, ishsizlar_soni: 95, haqiqi_ishsizlik_darajasi: 12, mehnat_resurslari: 1400, band_aholi: 1200, rasmiy_royxatdagi_ishchilar: 800, norasmi_sektorda_bandlik: 400, horiijga_ketkan_migrantlar: 45, urtacha_oylik_maosh: 3500000, yoshlar_ishsizligi: 18, ayollar_ishsizligi: 24, nogironlar_soni_va_bandligi: "24 чел (4 работают)", ijtimoyi_himoyaga_muqtoj_aholi: 35, kam_taminlangan_oylalar: 40, ogir_kasallik_holatlari: 3 },
+                { id: 21, mahalla: 11, aholi_soni: 1850, oylalar_soni: 480, honadonlar_soni: 410, kambagallik_darajasi: 22, rasmiy_ishsizlik_darajasi: 12, ishsizlar_soni: 110, haqiqi_ishsizlik_darajasi: 16, mehnat_resurslari: 1100, band_aholi: 850, rasmiy_royxatdagi_ishchilar: 450, norasmi_sektorda_bandlik: 400, horiijga_ketkan_migrantlar: 80, urtacha_oylik_maosh: 2900000, yoshlar_ishsizligi: 28, ayollar_ishsizligi: 30, nogironlar_soni_va_bandligi: "18 чел (2 работают)", ijtimoyi_himoyaga_muqtoj_aholi: 58, kam_taminlangan_oylalar: 62, ogir_kasallik_holatlari: 8 },
+                { id: 22, mahalla: 12, aholi_soni: 3100, oylalar_soni: 790, honadonlar_soni: 720, kambagallik_darajasi: 11, rasmiy_ishsizlik_darajasi: 6, ishsizlar_soni: 75, haqiqi_ishsizlik_darajasi: 9, mehnat_resurslari: 1800, band_aholi: 1650, rasmiy_royxatdagi_ishchilar: 1100, norasmi_sektorda_bandlik: 550, horiijga_ketkan_migrantlar: 30, urtacha_oylik_maosh: 4200000, yoshlar_ishsizligi: 12, ayollar_ishsizligi: 15, nogironlar_soni_va_bandligi: "30 чел (8 работают)", ijtimoyi_himoyaga_muqtoj_aholi: 25, kam_taminlangan_oylalar: 20, ogir_kasallik_holatlari: 2 },
+                { id: 23, mahalla: 13, aholi_soni: 1400, oylalar_soni: 310, honadonlar_soni: 290, kambagallik_darajasi: 30, rasmiy_ishsizlik_darajasi: 15, ishsizlar_soni: 120, haqiqi_ishsizlik_darajasi: 22, mehnat_resurslari: 800, band_aholi: 580, rasmiy_royxatdagi_ishchilar: 200, norasmi_sektorda_bandlik: 380, horiijga_ketkan_migrantlar: 110, urtacha_oylik_maosh: 2100000, yoshlar_ishsizligi: 35, ayollar_ishsizligi: 40, nogironlar_soni_va_bandligi: "40 чел (1 работает)", ijtimoyi_himoyaga_muqtoj_aholi: 85, kam_taminlangan_oylalar: 90, ogir_kasallik_holatlari: 11 }
+            ];
+
+            // 4. Анализ инфраструктуры
+            infraData = [
+                { id: 30, mahalla: 10, umumiy_maydon: 450, aholi_zichligi: 420, yollar_uzunligi: 35, elektr_uzulishlari: 12, gaz_bilantaminlanganlar: 85, asfaltlangan_yollar_ulushi: 65, internet_koplami_va_tezligi: "4G / 25 Мбит/с", suvgoriladigan_er_maydoni: 180, toza_ichimlik_suv_taminoti: 80, kanalizacia_tarmogi: 30, investiciya_jalb_qilish_bajarilishi: 75 },
+                { id: 31, mahalla: 11, umumiy_maydon: 320, aholi_zichligi: 290, yollar_uzunligi: 22, elektr_uzulishlari: 24, gaz_bilantaminlanganlar: 40, asfaltlangan_yollar_ulushi: 30, internet_koplami_va_tezligi: "3G / 8 Мбит/с", suvgoriladigan_er_maydoni: 240, toza_ichimlik_suv_taminoti: 45, kanalizacia_tarmogi: 10, investiciya_jalb_qilish_bajarilishi: 40 },
+                { id: 32, mahalla: 12, umumiy_maydon: 680, aholi_zichligi: 540, yollar_uzunligi: 55, elektr_uzulishlari: 6, gaz_bilantaminlanganlar: 95, asfaltlangan_yollar_ulushi: 85, internet_koplami_va_tezligi: "GPON / 100 Мбит/с", suvgoriladigan_er_maydoni: 450, toza_ichimlik_suv_taminoti: 90, kanalizacia_tarmogi: 60, investiciya_jalb_qilish_bajarilishi: 95 },
+                { id: 33, mahalla: 13, umumiy_maydon: 210, aholi_zichligi: 180, yollar_uzunligi: 15, elektr_uzulishlari: 48, gaz_bilantaminlanganlar: 15, asfaltlangan_yollar_ulushi: 15, internet_koplami_va_tezligi: "2G / Edge", suvgoriladigan_er_maydoni: 60, toza_ichimlik_suv_taminoti: 20, kanalizacia_tarmogi: 0, investiciya_jalb_qilish_bajarilishi: 15 }
+            ];
+
+            // Обновление карты и интерфейса
+            renderMapElements();
+            populateTables();
+            updateDashboardMetrics();
+            populateRayonDropdowns();
+        }
+
+        // ================== РАБОТА С РЕАЛЬНЫМ DJANGO API ==================
+        async function loadLiveData() {
+            const statusLabel = document.getElementById('status-label');
+            try {
+                // Запрос районов (GET /api/rayon/)
+                let resRayon = await fetch(`${apiBaseUrl}/rayon/`);
+                if (!resRayon.ok) throw new Error("Эндпоинт районов не найден!");
+                rayons = await resRayon.json();
+
+                // Запрос махаллей (GET /api/mahalla/)
+                let resMahalla = await fetch(`${apiBaseUrl}/mahalla/`);
+                mahallas = await resMahalla.json();
+
+                // Запрос AVB (GET /api/mahalla/avb/)
+                let resAvb = await fetch(`${apiBaseUrl}/mahalla/avb/`);
+                avbData = await resAvb.json();
+
+                // Запрос Infra (GET /api/mahalla/infra/)
+                let resInfra = await fetch(`${apiBaseUrl}/mahalla/infra/`);
+                infraData = await resInfra.json();
+
+                statusLabel.innerText = "ПОДКЛЮЧЕНО К DJANGO";
+                statusLabel.className = "text-xs font-mono text-emerald-400";
+
+                renderMapElements();
+                populateTables();
+                updateDashboardMetrics();
+                populateRayonDropdowns();
+            } catch (err) {
+                console.error("Ошибка сети Django API: ", err);
+                statusLabel.innerText = "СБОЙ API (Загружен Mock)";
+                statusLabel.className = "text-xs font-mono text-rose-500 animate-pulse";
+
+                // Автоматический переход на Mock данные при ошибке подключения
+                loadMockData();
+            }
+        }
+
+        // Заполнение списка районов при добавлении махалли
+        function populateRayonDropdowns() {
+            const dropdown = document.getElementById('new-mahalla-rayon');
+            dropdown.innerHTML = "";
+            rayons.forEach(r => {
+                dropdown.innerHTML += `<option value="${r.id}">${r.name}</option>`;
+            });
+        }
+
+        // ================== ОТРИСОВКА КАРТЫ ==================
+        function renderMapElements() {
+            mapLayerGroup.clearLayers();
+
+            // 1. Отрисовка районов (если выбран конкретный район - скрываем остальные)
+            rayons.forEach(r => {
+                if (selectedRayonId && r.id !== selectedRayonId) return;
+
+                if (r.plot && r.plot.coordinates) {
+                    const flippedCoords = reverseGeoJSONCoords(r.plot.coordinates);
+                    const poly = L.polygon(flippedCoords, {
+                        color: '#00f0ff',
+                        fillColor: '#00f0ff',
+                        fillOpacity: selectedRayonId ? 0.05 : 0.15,
+                        weight: 2
+                    });
+
+                    // Клики по району
+                    poly.on('click', () => {
+                        selectRayon(r.id);
+                    });
+                    poly.bindTooltip(r.name, { permanent: false, direction: "center", className: "bg-slate-950 text-cyan-400 font-bold border-cyan-800 text-xs px-2 py-1" });
+                    mapLayerGroup.addLayer(poly);
+                }
+            });
+
+            // 2. Отрисовка махаллей внутри выбранного района
+            mahallas.forEach(m => {
+                if (selectedRayonId && m.rayon !== selectedRayonId) return;
+                if (!selectedRayonId) return; // Скрываем махалли на общей карте для чистоты обзора
+
+                if (m.plot && m.plot.coordinates) {
+                    const flippedCoords = reverseGeoJSONCoords(m.plot.coordinates);
+
+                    const isSelected = (m.id === selectedMahallaId);
+                    const poly = L.polygon(flippedCoords, {
+                        color: isSelected ? '#39ff14' : '#a855f7',
+                        fillColor: isSelected ? '#39ff14' : '#a855f7',
+                        fillOpacity: isSelected ? 0.4 : 0.2,
+                        weight: isSelected ? 3 : 1.5,
+                        dashArray: isSelected ? '0' : '4, 4'
+                    });
+
+                    poly.on('click', () => {
+                        selectMahalla(m.id);
+                    });
+                    poly.bindTooltip(m.name, { permanent: true, direction: "center", className: "bg-slate-950 text-indigo-400 font-bold border-indigo-800 text-[10px] p-0.5" });
+                    mapLayerGroup.addLayer(poly);
+                }
+            });
+
+            mapLayerGroup.addTo(map);
+        }
+
+        // Преобразование координат из формата GeoJSON [Lng, Lat] в формат Leaflet [Lat, Lng]
+        function reverseGeoJSONCoords(coords) {
+            if (!coords || !coords[0]) return [];
+            return coords[0].map(pt => [pt[1], pt[0]]);
+        }
+
+        // ================== ДЕТАЛИЗАЦИЯ И ВЫБОР ОБЪЕКТОВ ==================
+        function selectRayon(id) {
+            selectedRayonId = id;
+            selectedMahallaId = null;
+
+            const ray = rayons.find(r => r.id === id);
+            document.getElementById('active-hudud-label').innerHTML = `<i class="fa-solid fa-map-location mr-1.5 text-cyan-400"></i> АУДИТ: ${ray.name}`;
+
+            // Позиционирование камеры на районе
+            if (ray.plot && ray.plot.coordinates) {
+                const flippedCoords = reverseGeoJSONCoords(ray.plot.coordinates);
+                const bounds = L.polygon(flippedCoords).getBounds();
+                map.fitBounds(bounds, { padding: [30, 30] });
+            }
+
+            renderMapElements();
+            updateDashboardMetrics();
+            populateTables();
+        }
+
+        // При клике на махаллю мы получаем и показываем данные именно по её ID
+        function selectMahalla(id) {
+            selectedMahallaId = id;
+            const mah = mahallas.find(m => m.id === id);
+
+            selectedRayonId = mah.rayon;
+            const ray = rayons.find(r => r.id === selectedRayonId);
+
+            document.getElementById('active-hudud-label').innerHTML = `<i class="fa-solid fa-map-pin mr-1.5 text-emerald-400"></i> ${ray.name} > ${mah.name}`;
+
+            if (mah.plot && mah.plot.coordinates) {
+                const flippedCoords = reverseGeoJSONCoords(mah.plot.coordinates);
+                const bounds = L.polygon(flippedCoords).getBounds();
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+
+            renderMapElements();
+            updateDashboardMetrics();
+            populateTables();
+
+            // Генерация идеи малого бизнеса от ИИ
+            generateRandomAISlide();
+        }
+
+        function zoomToDefault() {
+            selectedRayonId = null;
+            selectedMahallaId = null;
+            document.getElementById('active-hudud-label').innerHTML = `<i class="fa-solid fa-map mr-1.5"></i> Каракалпакстан (Все регионы)`;
+            map.setView([42.4601, 59.6133], 8);
+            renderMapElements();
+            updateDashboardMetrics();
+            populateTables();
+        }
+
+        // ================== РАСЧЕТ И АГРЕГАЦИЯ ПОКАЗАТЕЛЕЙ ==================
+        function updateDashboardMetrics() {
+            let filteredMahallas = [];
+            if (selectedMahallaId) {
+                filteredMahallas = mahallas.filter(m => m.id === selectedMahallaId);
+            } else if (selectedRayonId) {
+                filteredMahallas = mahallas.filter(m => m.rayon === selectedRayonId);
+            } else {
+                filteredMahallas = mahallas;
+            }
+
+            const activeMahallaIds = filteredMahallas.map(m => m.id);
+            // Сопоставляем связанные модели по полю `mahalla` (это FK на Mahalla)
+            const activeAvb = avbData.filter(a => activeMahallaIds.includes(Number(a.mahalla)));
+            const activeInfra = infraData.filter(i => activeMahallaIds.includes(Number(i.mahalla)));
+
+            // Агрегация данных о населении
+            let sumAholi = activeAvb.reduce((sum, item) => sum + (item.aholi_soni || 0), 0);
+            let sumOilalar = activeAvb.reduce((sum, item) => sum + (item.oylalar_soni || 0), 0);
+            let sumBand = activeAvb.reduce((sum, item) => sum + (item.band_aholi || 0), 0);
+            let sumIshsiz = activeAvb.reduce((sum, item) => sum + (item.ishsizlar_soni || 0), 0);
+
+            let avgKambagallik = activeAvb.length ? Math.round(activeAvb.reduce((sum, item) => sum + (item.kambagallik_darajasi || 0), 0) / activeAvb.length) : 0;
+            let avgIshsizlik = activeAvb.length ? Math.round(activeAvb.reduce((sum, item) => sum + (item.haqiqi_ishsizlik_darajasi || 0), 0) / activeAvb.length) : 0;
+
+            let sumRasmiy = activeAvb.reduce((sum, item) => sum + (item.rasmiy_royxatdagi_ishchilar || 0), 0);
+            let sumNorasmiy = activeAvb.reduce((sum, item) => sum + (item.norasmi_sektorda_bandlik || 0), 0);
+            let sumYoshlar = activeAvb.reduce((sum, item) => sum + (item.yoshlar_ishsizligi || 0), 0);
+
+            let sumMuhtoj = activeAvb.reduce((sum, item) => sum + (item.ijtimoyi_himoyaga_muqtoj_aholi || 0), 0);
+            let sumKamTaminlangan = activeAvb.reduce((sum, item) => sum + (item.kam_taminlangan_oylalar || 0), 0);
+            let sumMigrantlar = activeAvb.reduce((sum, item) => sum + (item.horiijga_ketkan_migrantlar || 0), 0);
+            let avgMaosh = activeAvb.length ? Math.round(activeAvb.reduce((sum, item) => sum + (item.urtacha_oylik_maosh || 0), 0) / activeAvb.length) : 0;
+            let sumOgirKasal = activeAvb.reduce((sum, item) => sum + (item.ogir_kasallik_holatlari || 0), 0);
+
+            // Агрегация инфраструктуры
+            let avgZichlik = activeInfra.length ? Math.round(activeInfra.reduce((sum, item) => sum + (item.aholi_zichligi || 0), 0) / activeInfra.length) : 0;
+            let sumYollar = activeInfra.reduce((sum, item) => sum + (item.yollar_uzunligi || 0), 0);
+            let avgInvest = activeInfra.length ? Math.round(activeInfra.reduce((sum, item) => sum + (item.investiciya_jalb_qilish_bajarilishi || 0), 0) / activeInfra.length) : 0;
+            let sumSuvEr = activeInfra.reduce((sum, item) => sum + (item.suvgoriladigan_er_maydoni || 0), 0);
+
+            let avgElektrUzilish = activeInfra.length ? Math.round(activeInfra.reduce((sum, item) => sum + (item.elektr_uzulishlari || 0), 0) / activeInfra.length) : 0;
+            let avgAsfalt = activeInfra.length ? Math.round(activeInfra.reduce((sum, item) => sum + (item.asfaltlangan_yollar_ulushi || 0), 0) / activeInfra.length) : 0;
+            let avgWater = activeInfra.length ? Math.round(activeInfra.reduce((sum, item) => sum + (item.toza_ichimlik_suv_taminoti || 0), 0) / activeInfra.length) : 0;
+            let avgGaz = activeInfra.length ? Math.round(activeInfra.reduce((sum, item) => sum + (item.gaz_bilantaminlanganlar || 0), 0) / activeInfra.length) : 0;
+
+            let internetLabel = activeInfra.length ? activeInfra[0].internet_koplami_va_tezligi : "N/A";
+
+            // Вывод данных в структуру DOM
+            document.getElementById('stat-aholi-soni').innerText = sumAholi.toLocaleString();
+            document.getElementById('stat-oilalar-soni').innerText = sumOilalar.toLocaleString();
+            document.getElementById('stat-band-aholi').innerText = sumBand.toLocaleString();
+            document.getElementById('stat-ishsizlar-soni').innerText = sumIshsiz.toLocaleString();
+
+            document.getElementById('stat-muhtoj').innerText = sumMuhtoj.toLocaleString() + " чел.";
+            document.getElementById('stat-kam-taminlangan').innerText = sumKamTaminlangan.toLocaleString() + " сем.";
+            document.getElementById('stat-migrantlar').innerText = sumMigrantlar.toLocaleString() + " чел.";
+            document.getElementById('stat-maosh').innerText = (avgMaosh / 1000000).toFixed(1) + " млн UZS";
+            document.getElementById('stat-ogir-kasal').innerText = sumOgirKasal.toLocaleString() + " случ.";
+
+            // Настройка шкалы прогресса
+            document.getElementById('bar-muhtoj').style.width = Math.min(100, (sumMuhtoj / Math.max(1, sumAholi)) * 200) + '%';
+            document.getElementById('bar-kam-taminlangan').style.width = Math.min(100, (sumKamTaminlangan / Math.max(1, sumOilalar)) * 100) + '%';
+            document.getElementById('bar-migrantlar').style.width = Math.min(100, (sumMigrantlar / Math.max(1, sumAholi)) * 300) + '%';
+
+            // Правая информационная панель
+            document.getElementById('stat-zichlik').innerText = avgZichlik.toLocaleString();
+            document.getElementById('stat-yollar').innerText = sumYollar.toLocaleString() + " км";
+            document.getElementById('stat-invest').innerText = avgInvest + "%";
+            document.getElementById('stat-suv-er').innerText = sumSuvEr.toLocaleString() + " га";
+
+            document.getElementById('stat-elektr-uzilish').innerText = avgElektrUzilish + " раз";
+            document.getElementById('stat-asfalt-ulush').innerText = avgAsfalt + "%";
+            document.getElementById('stat-internet').innerText = internetLabel;
+
+            // Динамическое обновление графиков
+            chartPoverty.updateSeries([avgKambagallik]);
+            chartUnemployment.updateSeries([avgIshsizlik]);
+            chartSectors.updateSeries([{ name: 'Занятые жители', data: [sumRasmiy, sumNorasmiy, sumYoshlar] }]);
+            chartUtilities.updateSeries([{ name: 'Покрытие (Проценты)', data: [avgWater, avgGaz, avgAsfalt] }]);
+        }
+
+        // ================== ОТРИСОВКА И КЛИКИ ТАБЛИЦЫ ==================
+        function populateTables() {
+            const tbody = document.getElementById('hudud-table-body');
+            tbody.innerHTML = "";
+
+            let list = [];
+            mahallas.forEach(m => {
+                if (selectedRayonId && m.rayon !== selectedRayonId) return;
+
+                const r = rayons.find(ray => ray.id === m.rayon);
+                const avb = avbData.find(a => Number(a.mahalla) === m.id) || {};
+                const infra = infraData.find(i => Number(i.mahalla) === m.id) || {};
+
+                list.push({
+                    type: 'mahalla',
+                    id: m.id,
+                    name: m.name,
+                    parentName: r ? r.name : 'Неизвестно',
+                    aholi: avb.aholi_soni || 0,
+                    invest: infra.investiciya_jalb_qilish_bajarilishi || 0,
+                    selected: m.id === selectedMahallaId
+                });
+            });
+
+            // Добавление районов в сводный список, если район еще не выбран
+            if (!selectedRayonId) {
+                rayons.forEach(r => {
+                    const childMahallas = mahallas.filter(m => m.rayon === r.id).map(m => m.id);
+                    const rAvb = avbData.filter(a => childMahallas.includes(Number(a.mahalla)));
+                    const totalAholi = rAvb.reduce((s, x) => s + (x.aholi_soni || 0), 0);
+
+                    list.push({
+                        type: 'rayon',
+                        id: r.id,
+                        name: r.name,
+                        parentName: 'Районный комитет',
+                        aholi: totalAholi,
+                        invest: 70,
+                        selected: false
+                    });
+                });
+            }
+
+            // Вывод рядов таблицы
+            list.forEach(item => {
+                const isMahalla = item.type === 'mahalla';
+                const highlightClass = item.selected ? 'bg-cyan-950/40 text-white' : 'hover:bg-slate-800/40';
+
+                tbody.innerHTML += `
+                    <tr class="transition-colors ${highlightClass}">
+                        <td class="p-2.5">
+                            <span class="inline-block w-2 h-2 rounded-full ${isMahalla ? 'bg-indigo-500' : 'bg-cyan-400'}"></span>
+                        </td>
+                        <td class="p-2.5 font-bold text-white">${item.name}</td>
+                        <td class="p-2.5">${item.parentName}</td>
+                        <td class="p-2.5 font-mono text-cyan-400">${item.aholi.toLocaleString()}</td>
+                        <td class="p-2.5">
+                            <div class="flex items-center space-x-1.5">
+                                <span class="font-mono text-emerald-400">${item.invest}%</span>
+                                <div class="w-12 bg-slate-950 rounded-full h-1">
+                                    <div class="bg-emerald-500 h-1 rounded-full" style="width: ${item.invest}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="p-2.5 text-right">
+                            <button onclick="${isMahalla ? `selectMahalla(${item.id})` : `selectRayon(${item.id})`}" class="px-2 py-1 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded text-[10px] text-cyan-400">
+                                <i class="fa-solid fa-eye mr-0.5"></i> Аудит
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Фильтрация объектов таблицы
+        function filterHududTable() {
+            const query = document.getElementById('search-hudud').value.toLowerCase();
+            const rows = document.querySelectorAll('#hudud-table-body tr');
+
+            rows.forEach(row => {
+                const name = row.cells[1].textContent.toLowerCase();
+                const parent = row.cells[2].textContent.toLowerCase();
+                if (name.includes(query) || parent.includes(query)) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+
+        // ================== ИИ ГЕНЕРАТОР БИЗНЕС-СЦЕНАРИЕВ ==================
+        function generateRandomAISlide() {
+            const slideKeys = Object.keys(businessSlides);
+            const randomKey = slideKeys[Math.floor(Math.random() * slideKeys.length)];
+            const selectedSlide = businessSlides[randomKey];
+
+            document.getElementById('ai-placeholder').classList.add('hidden');
+            const slideBox = document.getElementById('ai-active-slide');
+            slideBox.classList.remove('hidden');
+
+            // Наполнение шаблона
+            document.getElementById('ai-slide-number').innerText = `СЛАЙД #${randomKey} (Из файла презентаций)`;
+            document.getElementById('ai-slide-title').innerText = selectedSlide.title.toUpperCase();
+            document.getElementById('ai-slide-desc').innerText = selectedSlide.desc;
+            document.getElementById('ai-slide-profit').innerText = selectedSlide.profit + " UZS";
+            document.getElementById('ai-slide-jobs').innerText = selectedSlide.jobs;
+            document.getElementById('ai-slide-poverty-impact').innerText = `Уровень бедности: ${selectedSlide.reduction}`;
+        }
+
+        // ================== ИНСТРУМЕНТЫ РИСОВАНИЯ И МОДАЛЬНЫЕ ОКНА ==================
+        function openCreateModal(type) {
+            currentDrawType = type;
+
+            // Активируем баннер рисования границ
+            document.getElementById('draw-helper').classList.remove('hidden');
+
+            closeModal('rayon');
+            closeModal('mahalla');
+
+            // Автоматическая активация полигона в Leaflet
+            const drawButton = document.querySelector('.leaflet-draw-draw-polygon');
+            if (drawButton) drawButton.click();
+        }
+
+        function cancelDrawing() {
+            currentDrawType = null;
+            document.getElementById('draw-helper').classList.add('hidden');
+            drawnLayers.clearLayers();
+        }
+
+        function openModal(type) {
+            document.getElementById(`modal-${type}`).classList.remove('hidden');
+        }
+
+        function closeModal(type) {
+            document.getElementById(`modal-${type}`).classList.add('hidden');
+        }
+
+        // Создание района (Mock / Live API)
+        async function handleRayonCreation(event) {
+            event.preventDefault();
+            const name = document.getElementById('new-rayon-name').value;
+            const region = document.getElementById('new-rayon-region').value;
+            const plotString = document.getElementById('new-rayon-plot').value;
+
+            if (!plotString) {
+                alert("Пожалуйста, сначала нарисуйте границы территории на карте!");
+                return;
+            }
+
+            const parsedPlot = JSON.parse(plotString);
+
+            // Передаем валидный JSON в plot, а также creator_id (твой сериализатор ожидает валидный user id)
+            const payload = {
+                name: name,
+                region: region,
+                is_active: true,
+                plot: parsedPlot,
+                creator: 1 // Django бэкенд требует ForeignKey на User. По умолчанию передаем ID первого суперпользователя.
+            };
+
+            if (currentMode === 'live') {
+                try {
+                    let response = await fetch(`${apiBaseUrl}/rayon/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    if (response.ok) {
+                        closeModal('rayon');
+                        await loadLiveData();
+                    } else {
+                        const errData = await response.json();
+                        alert("Ошибка валидации на Django API: " + JSON.stringify(errData));
+                    }
+                } catch (err) {
+                    alert("Ошибка связи с сервером бэкенда!");
+                }
+            } else {
+                const newId = rayons.length + 1;
+                rayons.push({
+                    id: newId,
+                    name: name,
+                    region: region,
+                    is_active: true,
+                    plot: parsedPlot
+                });
+                closeModal('rayon');
+                renderMapElements();
+                populateTables();
+                populateRayonDropdowns();
+            }
+
+            document.getElementById('form-rayon').reset();
+            drawnLayers.clearLayers();
+        }
+
+        // Создание махалли (Mock / Live API)
+        async function handleMahallaCreation(event) {
+            event.preventDefault();
+            const name = document.getElementById('new-mahalla-name').value;
+            const rayonId = parseInt(document.getElementById('new-mahalla-rayon').value);
+            const desc = document.getElementById('new-mahalla-description').value;
+            const plotString = document.getElementById('new-mahalla-plot').value;
+
+            if (!plotString) {
+                alert("Пожалуйста, сначала нарисуйте границы махалли на карте!");
+                return;
+            }
+
+            const parsedPlot = JSON.parse(plotString);
+
+            // Данные для основной модели Mahalla
+            const mData = {
+                name: name,
+                rayon: rayonId,
+                description: desc,
+                plot: parsedPlot,
+                is_active: true
+            };
+
+            // Данные для связанных моделей AVB и Infra
+            const avbPayload = {
+                aholi_soni: parseInt(document.getElementById('new-avb-aholi').value),
+                oylalar_soni: parseInt(document.getElementById('new-avb-oilalar').value),
+                band_aholi: parseInt(document.getElementById('new-avb-band').value),
+                ishsizlar_soni: parseInt(document.getElementById('new-avb-ishsiz').value),
+                urtacha_oylik_maosh: parseInt(document.getElementById('new-avb-maosh').value),
+                ijtimoyi_himoyaga_muqtoj_aholi: parseInt(document.getElementById('new-avb-muhtoj').value)
+            };
+
+            const infraPayload = {
+                asfaltlangan_yollar_ulushi: parseInt(document.getElementById('new-infra-asfalt').value),
+                yollar_uzunligi: parseInt(document.getElementById('new-infra-yollar').value),
+                gaz_bilantaminlanganlar: parseInt(document.getElementById('new-infra-gaz').value),
+                toza_ichimlik_suv_taminoti: parseInt(document.getElementById('new-infra-suv').value)
+            };
+
+            if (currentMode === 'live') {
+                try {
+                    // Шаг 1: Создаем Mahalla на /api/mahalla/
+                    let resM = await fetch(`${apiBaseUrl}/mahalla/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(mData)
+                    });
+
+                    if (resM.ok) {
+                        const savedMahalla = await resM.json();
+
+                        // Шаг 2: Привязываем ID новой махалли к связанным записям AVB и Infra
+                        avbPayload.mahalla = savedMahalla.id;
+                        infraPayload.mahalla = savedMahalla.id;
+
+                        // Шаг 3: POST-запрос на /api/mahalla/avb/
+                        await fetch(`${apiBaseUrl}/mahalla/avb/`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(avbPayload)
+                        });
+
+                        // Шаг 4: POST-запрос на /api/mahalla/infra/
+                        await fetch(`${apiBaseUrl}/mahalla/infra/`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(infraPayload)
+                        });
+
+                        closeModal('mahalla');
+                        await loadLiveData();
+                    } else {
+                        const errData = await resM.json();
+                        alert("Ошибка создания махалли: " + JSON.stringify(errData));
+                    }
+                } catch (err) {
+                    alert("Ошибка соединения с Django бэкендом!");
+                }
+            } else {
+                const newMahallaId = mahallas.length + 100;
+
+                mahallas.push({
+                    id: newMahallaId,
+                    rayon: rayonId,
+                    name: name,
+                    description: desc,
+                    is_active: true,
+                    plot: parsedPlot
+                });
+
+                avbData.push({
+                    id: avbData.length + 200,
+                    mahalla: newMahallaId,
+                    aholi_soni: avbPayload.aholi_soni,
+                    oylalar_soni: avbPayload.oylalar_soni,
+                    band_aholi: avbPayload.band_aholi,
+                    ishsizlar_soni: avbPayload.ishsizlar_soni,
+                    urtacha_oylik_maosh: avbPayload.urtacha_oylik_maosh,
+                    ijtimoyi_himoyaga_muqtoj_aholi: avbPayload.ijtimoyi_himoyaga_muqtoj_aholi
+                });
+
+                infraData.push({
+                    id: infraData.length + 300,
+                    mahalla: newMahallaId,
+                    asfaltlangan_yollar_ulushi: infraPayload.asfaltlangan_yollar_ulushi,
+                    yollar_uzunligi: infraPayload.yollar_uzunligi,
+                    gaz_bilantaminlanganlar: infraPayload.gaz_bilantaminlanganlar,
+                    toza_ichimlik_suv_taminoti: infraPayload.toza_ichimlik_suv_taminoti,
+                    investiciya_jalb_qilish_bajarilishi: 50
+                });
+
+                closeModal('mahalla');
+                renderMapElements();
+                populateTables();
+                updateDashboardMetrics();
+            }
+
+            document.getElementById('form-mahalla').reset();
+            drawnLayers.clearLayers();
+        }
+    </script>
+</body>
+</html>

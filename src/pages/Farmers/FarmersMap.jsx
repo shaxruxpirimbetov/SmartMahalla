@@ -4,7 +4,7 @@ import { Tractor } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import { polygonToPositions } from '../../utils/geo';
 import { createLucideMarkerIcon, polygonCenter } from '../../utils/mapIcons';
-import { resolveMediaUrl } from '../../services/api';
+import { FarmPopup } from '../../components/MapPopups';
 
 const KARAKALPAKSTAN_CENTER = [42.4602, 59.6073];
 const KARAKALPAKSTAN_ZOOM = 8;
@@ -18,22 +18,6 @@ const FARM_STYLE = { color: '#65a30d', weight: 5, fillColor: '#84cc16', fillOpac
 // Large, high-contrast marker (solid green circle, white border) - see
 // src/utils/mapIcons.jsx.
 const farmerIcon = createLucideMarkerIcon(Tractor, { modifier: 'farmer' });
-
-function FarmPopup({ farm }) {
-  // Farmer.photo (apps/land/models.py) comes back as a path relative to the
-  // backend's MEDIA_URL, not a usable <img src> on its own - see
-  // resolveMediaUrl in api.js.
-  const photoUrl = resolveMediaUrl(farm.photo);
-  return (
-    <div className="map-popup">
-      {photoUrl && <img src={photoUrl} alt={farm.name} className="map-popup__image" />}
-      <h4 className="map-popup__title">{farm.name}</h4>
-      <p className="map-popup__desc">
-        <strong>{farm.crop}.</strong> {farm.description}
-      </p>
-    </div>
-  );
-}
 
 // Dedicated Fermerlar map - shows only farm boundary polygons, drawn by the
 // admin at /admin/farmers and persisted to the real Farmer backend model

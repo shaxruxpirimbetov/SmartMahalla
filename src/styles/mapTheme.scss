@@ -118,6 +118,17 @@ $map-white: #ffffff;
   margin-bottom: 8px;
 }
 
+.map-popup__image--placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: $map-border;
+  color: $map-text-dim;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
 .map-popup__title {
   margin: 0 0 2px;
   font-size: 13px;

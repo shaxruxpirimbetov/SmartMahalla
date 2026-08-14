@@ -3,7 +3,7 @@ import { Store } from 'lucide-react';
 import 'leaflet/dist/leaflet.css';
 import { pointToLatLng } from '../../utils/geo';
 import { createLucideMarkerIcon } from '../../utils/mapIcons';
-import { resolveMediaUrl } from '../../services/api';
+import { BusinessPopup } from '../../components/MapPopups';
 
 // Nukus, Karakalpakstan - locked default view, matches every other map in
 // the app (see SmartMahalla_API_Hujjat.md §4.1 for the region default).
@@ -14,21 +14,6 @@ const KARAKALPAKSTAN_ZOOM = 8;
 // src/utils/mapIcons.jsx - instead of the old small default-pin/emoji
 // marker, so a Business is unmistakable against the satellite basemap.
 const businessIcon = createLucideMarkerIcon(Store, { modifier: 'business' });
-
-function BusinessPopup({ business }) {
-  // Tadbirkorlar.image (apps/mahalla/models.py) comes back as a path
-  // relative to the backend's MEDIA_URL, not a usable <img src> on its own -
-  // see resolveMediaUrl in api.js.
-  const imageUrl = resolveMediaUrl(business.image);
-  return (
-    <div className="map-popup">
-      {imageUrl && <img src={imageUrl} alt={business.name} className="map-popup__image" />}
-      <h4 className="map-popup__title">{business.name}</h4>
-      <p className="map-popup__meta">{business.owner}</p>
-      <p className="map-popup__desc">{business.description}</p>
-    </div>
-  );
-}
 
 // Dedicated Bizneslar map - shows only business markers, drawn by the admin
 // at /admin/businesses and persisted to the real Tadbirkorlar backend model
