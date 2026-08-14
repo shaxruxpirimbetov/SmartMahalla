@@ -1,0 +1,147 @@
+// Shared Leaflet map chrome - wrapper sizing, GIS markers, and popup theme -
+// reused across every page that embeds a map. Single source of truth: don't
+// redefine `.entity-map-wrapper`/`.entity-map` locally in a page's own scss,
+// or CSS bundle order (not visual intent) ends up deciding which copy wins.
+
+$map-blue: #2563eb;
+$map-navy: #123a70;
+$map-text-dim: #64748b;
+$map-text: #1e293b;
+$map-border: #e2e8f0;
+$map-white: #ffffff;
+
+.entity-map-wrapper {
+  // Leaflet's own panes/controls use z-index values up to 1000 (see
+  // leaflet.css - .leaflet-top/.leaflet-bottom is 1000). `.leaflet-container`
+  // doesn't establish a stacking context on its own, so without this that
+  // scale competes directly against the app shell's sticky sidebar/topbar
+  // (z-index 20/15 - see layout.scss) and wins, floating the zoom/draw
+  // controls on top of them while scrolling. `position` + `z-index` here
+  // contains Leaflet's internal stacking inside the map itself.
+  position: relative;
+  z-index: 0;
+  height: 480px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid $map-border;
+}
+
+.entity-map {
+  height: 100%;
+  width: 100%;
+}
+
+// Leaflet's default .leaflet-div-icon adds its own white box/border -
+// strip that so only our own marker chrome (below) shows.
+.lucide-marker-wrapper {
+  background: transparent;
+  border: none;
+}
+
+// Custom lucide-react markers (see src/utils/mapIcons.jsx createLucideMarkerIcon)
+// - a solid colored circle, white border, strong drop shadow, so Business/
+// Farmer objects read as unmistakable landmarks against the satellite
+// basemap instead of the small default pin. Used on every map that plots
+// them: BusinessesMap, FarmersMap, and the main Dashboard map.
+.lucide-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 3px solid $map-white;
+  box-shadow:
+    0 4px 12px rgba(15, 23, 42, 0.5),
+    0 0 0 1px rgba(15, 23, 42, 0.1);
+  transition: transform 0.15s ease;
+
+  svg {
+    display: block;
+    filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+  }
+
+  &:hover {
+    transform: scale(1.1);
+    z-index: 1000 !important;
+  }
+}
+
+.lucide-marker--business {
+  background: $map-blue;
+}
+
+.lucide-marker--farmer {
+  background: #16a34a;
+}
+
+.leaflet-popup.cyber-popup {
+  .leaflet-popup-content-wrapper {
+    background: $map-white;
+    color: $map-text;
+    border: 1px solid $map-border;
+    border-radius: 10px;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
+  }
+
+  .leaflet-popup-content {
+    margin: 12px 14px;
+    font-family: inherit;
+    line-height: 1.4;
+  }
+
+  .leaflet-popup-tip {
+    background: $map-white;
+    border: 1px solid $map-border;
+    box-shadow: none;
+  }
+
+  .leaflet-popup-close-button {
+    color: $map-text-dim;
+
+    &:hover {
+      color: $map-blue;
+    }
+  }
+}
+
+.map-popup {
+  min-width: 170px;
+}
+
+.map-popup__image {
+  display: block;
+  width: 100%;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.map-popup__title {
+  margin: 0 0 2px;
+  font-size: 13px;
+  font-weight: 700;
+  color: $map-navy;
+}
+
+.map-popup__meta {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: $map-text-dim;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.map-popup__desc {
+  margin: 0;
+  font-size: 12px;
+  color: $map-text;
+}
+
+.map-popup__tag {
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  font-weight: 700;
+}

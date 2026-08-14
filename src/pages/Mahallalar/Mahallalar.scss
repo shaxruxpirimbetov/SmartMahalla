@@ -1,0 +1,132 @@
+@use '../../styles/mapTheme';
+
+$gov-bg: #eef1f6;
+$gov-navy: #123a70;
+$gov-navy-dark: #0c2a52;
+$gov-blue-tint: #eaf2ff;
+$gov-text-dim: #64748b;
+$gov-text: #1e293b;
+$gov-border: #e2e8f0;
+$red: #dc2626;
+
+.mahallalar {
+  min-height: calc(100svh - 65px);
+  margin: -24px;
+  padding: 24px 28px 40px;
+  background: $gov-bg;
+  color: $gov-text;
+}
+
+.mahallalar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 22px 28px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, $gov-navy, $gov-navy-dark);
+  box-shadow: 0 10px 24px rgba(18, 58, 112, 0.28);
+  flex-wrap: wrap;
+}
+
+.mahallalar__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+}
+
+.mahallalar__subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.mahallalar__error {
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border: 1px solid rgba($red, 0.25);
+  border-radius: 8px;
+  background: rgba($red, 0.06);
+  color: #991b1b;
+}
+
+.rayon-select {
+  padding: 9px 12px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  color: #ffffff;
+  font-size: 13px;
+
+  option {
+    color: #1e293b;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: #ffffff;
+  }
+}
+
+.mahallalar__grid {
+  display: grid;
+  grid-template-columns: 1.2fr 1.4fr;
+  gap: 20px;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mahallalar .table-wrapper {
+  max-height: 480px;
+  overflow: auto;
+}
+
+.mahallalar .data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 9px 10px;
+    text-align: left;
+    border-bottom: 1px solid $gov-border;
+    white-space: nowrap;
+  }
+
+  th {
+    position: sticky;
+    top: 0;
+    background: $gov-blue-tint;
+    color: $gov-navy;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+
+  td {
+    color: $gov-text;
+  }
+
+  tbody tr {
+    transition: background 0.15s ease;
+  }
+
+  tbody tr:hover {
+    background: $gov-blue-tint;
+  }
+
+  &__empty {
+    text-align: center;
+    color: $gov-text-dim;
+    padding: 24px 0 !important;
+  }
+}

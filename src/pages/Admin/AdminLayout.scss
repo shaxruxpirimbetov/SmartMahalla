@@ -1,0 +1,124 @@
+$gov-bg: #eef1f6;
+$gov-navy: #123a70;
+$gov-navy-dark: #0c2a52;
+$gov-blue: #2563eb;
+$gov-text-dim: #64748b;
+$gov-border: #e2e8f0;
+
+.admin-layout {
+  min-height: calc(100svh - 65px);
+  margin: -24px;
+  padding: 24px 28px 40px;
+  background: $gov-bg;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.admin-layout__header {
+  padding: 22px 28px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, $gov-navy, $gov-navy-dark);
+  box-shadow: 0 10px 24px rgba(18, 58, 112, 0.28);
+}
+
+.admin-layout__header-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.admin-layout__logout {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+
+  svg {
+    flex-shrink: 0;
+  }
+
+  &:hover {
+    color: #ffffff;
+    background: rgba(239, 68, 68, 0.45);
+    border-color: rgba(239, 68, 68, 0.6);
+  }
+}
+
+.admin-layout__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+}
+
+.admin-layout__subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.admin-layout__nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.admin-layout__link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 999px;
+  border: 1px solid $gov-border;
+  background: #ffffff;
+  color: $gov-text-dim;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+
+  svg {
+    flex-shrink: 0;
+    stroke-width: 2;
+    color: inherit;
+  }
+
+  &:hover {
+    color: #1e293b;
+    border-color: rgba($gov-blue, 0.35);
+  }
+
+  &.is-active {
+    color: #16233d;
+    background: #eef2ff;
+    border-color: rgba($gov-blue, 0.4);
+  }
+}
+
+.admin-layout__content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}

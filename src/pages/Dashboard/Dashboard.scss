@@ -1,0 +1,423 @@
+$gov-bg: #eef1f6;
+$gov-navy: #123a70;
+$gov-blue: #2563eb;
+$gov-blue-tint: #eaf2ff;
+$gov-text: #1e293b;
+$gov-text-dim: #64748b;
+$gov-border: #e2e8f0;
+$green: #16a34a;
+$red: #dc2626;
+$yellow: #d97706;
+
+// Every selector below is nested under `.dashboard` on purpose, even ones
+// that look generic (`.stat-row`, `.data-table`, `.main-grid`, `.col`...).
+// Businesses/Farmers/Roads/Mahallalar.scss all define bare copies of the
+// same class names (copy-pasted from an earlier version of this file) - as
+// long as every copy agreed, the collision was invisible, but now that this
+// page's theme diverges from theirs, an unscoped rule here would have its
+// winner decided by CSS bundle order, not by which page is rendering.
+.dashboard {
+  min-height: calc(100svh - 65px);
+  margin: -24px;
+  background: $gov-bg;
+  color: $gov-text;
+
+  // ---- Content / header ----------------------------------------------
+
+  .dashboard__content {
+    padding: 24px 28px 40px;
+  }
+
+  .dashboard__error {
+    padding: 10px 14px;
+    margin-bottom: 16px;
+    border: 1px solid rgba($red, 0.25);
+    border-radius: 8px;
+    background: rgba($red, 0.06);
+    color: #991b1b;
+  }
+
+  .dashboard__error--warn {
+    border-color: rgba($yellow, 0.3);
+    background: rgba($yellow, 0.08);
+    color: #92400e;
+  }
+
+  .panel-notice {
+    margin: 0;
+    padding: 12px 4px;
+    font-size: 13px;
+    color: $gov-text-dim;
+    font-style: italic;
+  }
+
+  // ---- Selected-area banner - shows which Rayon/Mahalla the side panels
+  // currently reflect (see Dashboard.jsx `selectedArea`), or a hint to click
+  // one on the map when nothing is selected yet. --------------------------
+
+  .area-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    margin-bottom: 16px;
+    border-radius: 8px;
+    border: 1px solid $gov-border;
+    background: #ffffff;
+    font-size: 13px;
+    color: $gov-text-dim;
+  }
+
+  .area-banner--active {
+    border-color: rgba($gov-blue, 0.35);
+    background: $gov-blue-tint;
+    color: $gov-navy;
+  }
+
+  .area-banner__icon {
+    flex-shrink: 0;
+  }
+
+  .area-banner__text {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+
+    strong {
+      color: $gov-navy;
+      font-size: 14px;
+    }
+  }
+
+  .area-banner__type {
+    padding: 2px 8px;
+    border-radius: 999px;
+    background: rgba($gov-navy, 0.08);
+    color: $gov-navy;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .area-banner__notice {
+    color: $yellow;
+    font-style: italic;
+  }
+
+  .area-banner__clear {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba($gov-blue, 0.35);
+    background: #ffffff;
+    color: $gov-blue;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: $gov-blue-tint;
+    }
+  }
+
+  .stat-list--compact {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed $gov-border;
+  }
+
+  // ---- Grid ---------------------------------------------------------------
+
+  // Side columns are deliberately narrower than the old 320px so the center
+  // column (map + table) gets more breathing room and can stretch further
+  // toward both edges of the content area.
+  .main-grid {
+    display: grid;
+    grid-template-columns: 260px 1fr 260px;
+    gap: 20px;
+    align-items: start;
+
+    @media (max-width: 1300px) {
+      grid-template-columns: 260px 1fr;
+
+      .col-right {
+        grid-column: 1 / -1;
+      }
+    }
+
+    @media (max-width: 760px) {
+      grid-template-columns: 1fr;
+
+      .col-right {
+        grid-column: auto;
+      }
+    }
+  }
+
+  .col {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    min-width: 0;
+  }
+
+  // ---- Stat rows ----------------------------------------------------------
+
+  .stat-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .stat-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 2px;
+    border-bottom: 1px solid $gov-border;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  .stat-row__label {
+    color: $gov-text-dim;
+    font-size: 13px;
+  }
+
+  .stat-row__value {
+    font-size: 15px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .stat-row__value--blue {
+    color: $gov-blue;
+  }
+
+  .stat-row__value--green {
+    color: $green;
+  }
+
+  .stat-row__value--red {
+    color: $red;
+  }
+
+  .stat-row__value--yellow {
+    color: $yellow;
+  }
+
+  // ---- Skeleton loader ------------------------------------------------
+
+  .stat-row--skeleton {
+    background: transparent;
+    border-color: transparent;
+  }
+
+  .skeleton-bar {
+    display: block;
+    height: 12px;
+    border-radius: 4px;
+    background: linear-gradient(
+      90deg,
+      rgba(148, 163, 184, 0.14) 25%,
+      rgba(148, 163, 184, 0.28) 37%,
+      rgba(148, 163, 184, 0.14) 63%
+    );
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+
+  .skeleton-bar--label {
+    width: 45%;
+  }
+
+  .skeleton-bar--value {
+    width: 25%;
+  }
+
+  // ---- Spinner ----------------------------------------------------------
+
+  .panel-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(1px);
+    border-radius: 8px;
+    z-index: 2;
+  }
+
+  .spinner {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 3px solid rgba(37, 99, 235, 0.15);
+    border-top-color: $gov-blue;
+    animation: spin 0.8s linear infinite;
+  }
+
+  // ---- Charts / map / table ---------------------------------------------
+
+  .chart-wrapper,
+  .table-wrapper,
+  .map-wrapper {
+    position: relative;
+  }
+
+  // The map card itself goes full-bleed - no body padding - so the map
+  // stretches edge to edge inside its panel instead of floating in a frame.
+  .map-panel .gov-panel__body {
+    padding: 0;
+  }
+
+  // The map/table column is the dominant one in this layout (see
+  // grid-template-columns above) - the map gets a tall, wide canvas instead
+  // of the small cramped panel the old cyberpunk layout used.
+  .map-wrapper {
+    // See the identical comment on .entity-map-wrapper in mapTheme.scss -
+    // contains Leaflet's own z-index scale so it can't float above the
+    // app shell's sticky sidebar/topbar.
+    // No border/radius of its own - the panel around it (.map-panel, with
+    // its own overflow: hidden + 12px radius) clips it flush to the edges.
+    position: relative;
+    z-index: 0;
+    height: 640px;
+  }
+
+  .dashboard-map {
+    height: 100%;
+    width: 100%;
+  }
+
+  // Floating on/off toolbar over the map - "Hamma maʼlumotlar" shows every
+  // boundary, "Tozalash" clears them. z-index is set well above Leaflet's own
+  // control scale (see the .map-wrapper comment above) so it never gets
+  // buried under the zoom control while still sitting inside this card.
+  .map-toolbar {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 1000;
+    display: flex;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid $gov-border;
+    box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
+    backdrop-filter: blur(4px);
+  }
+
+  .map-toolbar__btn {
+    padding: 7px 14px;
+    border: none;
+    border-radius: 999px;
+    background: transparent;
+    color: $gov-text-dim;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background 0.15s ease,
+      color 0.15s ease;
+
+    &:hover {
+      color: $gov-navy;
+    }
+
+    &--all.is-active {
+      background: $gov-blue;
+      color: #ffffff;
+    }
+
+    &--clear.is-active {
+      background: $red;
+      color: #ffffff;
+    }
+  }
+
+  .table-wrapper {
+    max-height: 340px;
+    overflow: auto;
+  }
+
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+
+    th,
+    td {
+      padding: 10px 12px;
+      text-align: left;
+      border-bottom: 1px solid $gov-border;
+      white-space: nowrap;
+    }
+
+    th {
+      position: sticky;
+      top: 0;
+      background: $gov-blue-tint;
+      color: $gov-navy;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.05em;
+    }
+
+    td {
+      color: $gov-text;
+    }
+
+    tbody tr {
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    tbody tr:hover {
+      background: $gov-blue-tint;
+    }
+
+    // Row for the Mahalla currently focused via a map click or this same
+    // table (see Dashboard.jsx `selectedArea`/`handleSelectArea`).
+    tbody tr.is-selected {
+      background: $gov-blue-tint;
+      box-shadow: inset 3px 0 0 $gov-blue;
+    }
+
+    &__empty {
+      text-align: center;
+      color: $gov-text-dim;
+      padding: 24px 0 !important;
+    }
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

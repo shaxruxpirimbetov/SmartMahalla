@@ -1,0 +1,431 @@
+@use '../../styles/mapTheme';
+
+$gov-bg: #eef1f6;
+$gov-navy: #123a70;
+$gov-blue: #2563eb;
+$gov-blue-tint: #eaf2ff;
+$gov-text-dim: #64748b;
+$gov-text: #1e293b;
+$gov-border: #e2e8f0;
+$green: #16a34a;
+$red: #dc2626;
+
+// ---- Shared page body, used by EntityAdminPage.jsx and AdminOverview.jsx -
+
+.admin-page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.admin-page__error,
+.admin-page__success {
+  padding: 10px 14px;
+  border-radius: 8px;
+  margin: 0;
+}
+
+.admin-page__error {
+  border: 1px solid rgba($red, 0.25);
+  background: rgba($red, 0.06);
+  color: #991b1b;
+}
+
+.admin-page__success {
+  border: 1px solid rgba($green, 0.25);
+  background: rgba($green, 0.08);
+  color: #166534;
+}
+
+.admin-page__map-wrapper {
+  height: 560px;
+}
+
+// ---- Split view: map (left) + saved-items list (right) - GeoEntityAdminPage,
+// used by AdminRayonlar/AdminMahallalar so the map no longer eats the whole
+// page. --------------------------------------------------------------------
+
+.geo-admin__split {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.geo-admin__map-panel {
+  min-width: 0;
+}
+
+.geo-admin__map-wrapper {
+  height: 480px;
+}
+
+.geo-admin__list-panel {
+  align-self: start;
+}
+
+.geo-admin__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.geo-admin__list-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid $gov-border;
+  background: #ffffff;
+  color: $gov-text;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+
+  &:hover {
+    border-color: rgba($gov-blue, 0.4);
+    background: $gov-blue-tint;
+  }
+
+  &.is-selected {
+    border-color: $gov-blue;
+    background: $gov-blue-tint;
+  }
+}
+
+.geo-admin__list-dot {
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.geo-admin__list-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.geo-admin__list-badge {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba($gov-navy, 0.08);
+  color: $gov-navy;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-page .panel-notice {
+  margin: 0;
+  padding: 0 4px;
+  font-size: 13px;
+  color: $gov-text-dim;
+  font-style: italic;
+}
+
+// ---- Overview cards ---------------------------------------------------------
+
+.admin-page .admin-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 14px;
+}
+
+.admin-page .admin-overview-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 16px;
+  border-radius: 12px;
+  border: 1px solid $gov-border;
+  background: #ffffff;
+  text-decoration: none;
+  color: $gov-text;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: rgba($gov-blue, 0.4);
+    box-shadow: 0 6px 16px rgba(18, 58, 112, 0.1);
+  }
+}
+
+.admin-page .admin-overview-card__icon {
+  font-size: 22px;
+}
+
+.admin-page .admin-overview-card__label {
+  font-size: 13px;
+  color: $gov-text-dim;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.admin-page .admin-overview-card__count {
+  font-size: 24px;
+  font-weight: 800;
+  color: $gov-navy;
+  font-variant-numeric: tabular-nums;
+}
+
+// ---- Save modal --------------------------------------------------------------
+
+.admin-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.admin-modal {
+  width: min(420px, 92vw);
+  max-height: 88vh;
+  overflow-y: auto;
+  padding: 22px 24px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid $gov-border;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+}
+
+// Wider layout for tabbed "Kompleks Tahlil" stats forms (see
+// FieldsFormModal.jsx `sections`) - 420px is fine for a 2-field name-it
+// modal but cramped once fields are grouped into tabs.
+.admin-modal--wide {
+  width: min(520px, 94vw);
+}
+
+.admin-modal__title {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #16233d;
+}
+
+.admin-modal__tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid $gov-border;
+}
+
+.admin-modal__tab {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid $gov-border;
+  background: #f8fafc;
+  color: $gov-text-dim;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    border-color: rgba($gov-blue, 0.4);
+    color: $gov-text;
+  }
+
+  &.is-active {
+    background: $gov-blue;
+    border-color: $gov-blue;
+    color: #ffffff;
+  }
+}
+
+.admin-modal__form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.admin-modal__field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: $gov-text-dim;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+
+  input,
+  select,
+  textarea {
+    padding: 9px 10px;
+    border-radius: 6px;
+    border: 1px solid $gov-border;
+    background: #f8fafc;
+    color: $gov-text;
+    font: inherit;
+    text-transform: none;
+    letter-spacing: normal;
+    resize: vertical;
+
+    &:focus {
+      outline: none;
+      border-color: rgba($gov-blue, 0.5);
+    }
+  }
+}
+
+.admin-modal__image-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.admin-modal__image-preview {
+  width: 100%;
+  height: 90px;
+  object-fit: cover;
+  border-radius: 6px;
+  border: 1px solid $gov-border;
+}
+
+.admin-modal__error {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba($red, 0.25);
+  background: rgba($red, 0.06);
+  color: #991b1b;
+  font-size: 12px;
+}
+
+.admin-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.admin-modal__btn {
+  padding: 9px 18px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+
+.admin-modal__btn--ghost {
+  background: transparent;
+  border-color: $gov-border;
+  color: $gov-text-dim;
+
+  &:hover:not(:disabled) {
+    color: $gov-text;
+    border-color: rgba(100, 116, 139, 0.4);
+  }
+}
+
+.admin-modal__btn--primary {
+  background: $gov-blue;
+  border-color: $gov-blue;
+  color: #ffffff;
+
+  &:hover:not(:disabled) {
+    background: #1d4ed8;
+  }
+}
+
+// ---- leaflet-draw toolbar: strip the a11y-only text nodes it injects,
+// which otherwise render as visible stray text against this light theme.
+.sr-only {
+  display: none;
+}
+
+// ---- Danger zone: AdminOverview.jsx's "clear everything" panel - deletes
+// every Rayon/Mahalla/statistika/Business/Farmer/Road row on the real
+// backend (see clearAllData in api.js), not just a local cache. -----------
+
+.admin-danger-panel .gov-panel__header {
+  border-bottom-color: rgba($red, 0.2);
+}
+
+.admin-danger-panel {
+  border-color: rgba($red, 0.25);
+}
+
+.admin-danger-panel .panel-notice {
+  font-style: normal;
+  margin-bottom: 12px;
+}
+
+.admin-danger-panel__msg {
+  font-weight: 600;
+  color: $gov-navy;
+}
+
+.admin-danger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border-radius: 6px;
+  border: 1px solid rgba($red, 0.35);
+  background: rgba($red, 0.06);
+  color: $red;
+  font: inherit;
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+
+  &:hover:not(:disabled) {
+    background: $red;
+    border-color: $red;
+    color: #ffffff;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+}
+

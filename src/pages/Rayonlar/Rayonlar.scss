@@ -1,0 +1,166 @@
+@use '../../styles/mapTheme';
+
+$gov-bg: #eef1f6;
+$gov-navy: #123a70;
+$gov-navy-dark: #0c2a52;
+$gov-text-dim: #64748b;
+$gov-text: #1e293b;
+$gov-border: #e2e8f0;
+$green: #16a34a;
+$red: #dc2626;
+
+.rayonlar {
+  min-height: calc(100svh - 65px);
+  margin: -24px;
+  padding: 24px 28px 40px;
+  background: $gov-bg;
+  color: $gov-text;
+}
+
+.rayonlar__header {
+  margin-bottom: 24px;
+  padding: 22px 28px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, $gov-navy, $gov-navy-dark);
+  box-shadow: 0 10px 24px rgba(18, 58, 112, 0.28);
+}
+
+.rayonlar__title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+}
+
+.rayonlar__subtitle {
+  margin: 4px 0 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.rayonlar__error {
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  border: 1px solid rgba($red, 0.25);
+  border-radius: 8px;
+  background: rgba($red, 0.06);
+  color: #991b1b;
+}
+
+.rayonlar__grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 20px;
+  align-items: start;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rayonlar .panel-notice {
+  margin: 0;
+  padding: 12px 4px;
+  font-size: 13px;
+  color: $gov-text-dim;
+  font-style: italic;
+}
+
+.rayon-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.rayon-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: #f8fafc;
+  border: 1px solid $gov-border;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+
+  &:hover {
+    border-color: rgba($gov-navy, 0.35);
+    background: #eef2ff;
+  }
+}
+
+.rayon-card--skeleton {
+  height: 68px;
+  cursor: default;
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.12) 25%,
+    rgba(148, 163, 184, 0.24) 37%,
+    rgba(148, 163, 184, 0.12) 63%
+  );
+  background-size: 400% 100%;
+  animation: rayon-shimmer 1.4s ease-in-out infinite;
+
+  &:hover {
+    border-color: $gov-border;
+    background-color: transparent;
+  }
+}
+
+@keyframes rayon-shimmer {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+.rayon-card__name {
+  font-weight: 700;
+  font-size: 14px;
+  color: #16233d;
+}
+
+.rayon-card__meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: $gov-text-dim;
+}
+
+.rayon-card__badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+
+  &.is-active {
+    color: $green;
+    background: rgba($green, 0.12);
+  }
+
+  &.is-inactive {
+    color: $red;
+    background: rgba($red, 0.12);
+  }
+}
+
+.rayon-card__count {
+  font-size: 12px;
+  color: $gov-navy;
+  font-weight: 600;
+}
