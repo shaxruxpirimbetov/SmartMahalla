@@ -13,7 +13,7 @@ import { dataUrlToBlob } from '../utils/imageCompress';
 // pending-deploy note from last session. Revert to the production URL below
 // once the live PythonAnywhere backend has the same code + migrations.
 // export const BASE_URL = 'https://sdatabase.pythonanywhere.com/api/';
-export const BASE_URL = 'http://127.0.0.1:8000/api/';
+export const BASE_URL = 'https://sdatabase.pythonanywhere.com/api/';
 
 const api = axios.create({
   baseURL: BASE_URL,
