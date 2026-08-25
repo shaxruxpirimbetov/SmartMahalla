@@ -21,6 +21,28 @@ const SECTIONS = [
   { key: 'urgent_city_problems', label: 'Shoshilinch muammolar' },
 ];
 
+// Gemini doesn't always return a plain string per array item - `utils/ai.py`
+// leaves its output shape up to the model, and it has drifted to richer
+// `{ name/problem/side, description/details }` objects (more detail per the
+// prompt's "koʻproq matn boʻlsin" instruction). Rendering that object
+// directly as a JSX child throws ("Objects are not valid as a React child"),
+// which is what showed up as only a *fragment* of the advice appearing (the
+// category tag painted, then the crash) instead of the full title+body.
+// This normalizes either shape into one plain string with nothing dropped.
+const TITLE_KEYS = ['name', 'problem', 'side', 'title'];
+const BODY_KEYS = ['description', 'details', 'text', 'body'];
+
+function textFromItem(item) {
+  if (typeof item === 'string') return item;
+  if (item && typeof item === 'object') {
+    const title = TITLE_KEYS.map((k) => item[k]).find((v) => typeof v === 'string' && v);
+    const body = BODY_KEYS.map((k) => item[k]).find((v) => typeof v === 'string' && v);
+    if (title && body) return `${title}. ${body}`;
+    return title || body || '';
+  }
+  return item == null ? '' : String(item);
+}
+
 function ImageSkeleton() {
   return <div className="ai-portal__image-skeleton" aria-hidden="true" />;
 }
@@ -71,11 +93,11 @@ function AiPortal() {
       // together - not the whole structured breakdown. Keeps the card to
       // exactly one image + one text, both freshly randomized per click.
       const analysis = data.data ?? {};
+      console.log('analysis: ', analysis);
       const pool = SECTIONS.flatMap((s) =>
-        (Array.isArray(analysis[s.key]) ? analysis[s.key] : []).map((text) => ({
-          category: s.label,
-          text,
-        }))
+        (Array.isArray(analysis[s.key]) ? analysis[s.key] : [])
+          .map((item) => ({ category: s.label, text: textFromItem(item) }))
+          .filter((entry) => entry.text)
       );
       const advice = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
 

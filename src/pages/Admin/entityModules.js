@@ -5,18 +5,28 @@
 import {
   getRayons,
   createRayon,
+  updateRayon,
+  deleteRayon,
   getMahallas,
   createMahalla,
+  updateMahalla,
+  deleteMahalla,
   getAholiVaBandlik,
   createAholiVaBandlik,
   getInfratuzilma,
   createInfratuzilma,
   getBusinesses,
   createBusiness,
+  updateBusiness,
+  deleteBusiness,
   getFarmers,
   createFarmer,
+  updateFarmer,
+  deleteFarmer,
   getRoads,
   createRoad,
+  updateRoad,
+  deleteRoad,
   fetchAllPages,
 } from '../../services/api';
 import { getCurrentUserId } from '../../utils/auth';
@@ -290,6 +300,8 @@ export const RAYON_MODULE = {
   geoField: 'plot',
   list: getRayons,
   create: createRayon,
+  update: updateRayon,
+  delete: deleteRayon,
   fields: [
     { name: 'name', label: 'Nomi', type: 'text' },
     { name: 'region', label: 'Region', type: 'text', default: 'Qoraqalpogʻiston' },
@@ -318,6 +330,8 @@ export const MAHALLA_MODULE = {
   geoField: 'plot',
   list: getMahallas,
   create: createMahalla,
+  update: updateMahalla,
+  delete: deleteMahalla,
   needsRayonContext: true,
   fields: [
     { name: 'name', label: 'Nomi', type: 'text' },
@@ -344,6 +358,8 @@ export const BUSINESS_MODULE = {
   geoField: 'location',
   list: getBusinesses,
   create: createBusiness,
+  update: updateBusiness,
+  delete: deleteBusiness,
   needsRayonContext: true,
   needsMahallaContext: true,
   fields: [
@@ -367,6 +383,8 @@ export const FARMER_MODULE = {
   geoField: 'plot',
   list: getFarmers,
   create: createFarmer,
+  update: updateFarmer,
+  delete: deleteFarmer,
   needsRayonContext: true,
   needsMahallaContext: true,
   fields: [
@@ -387,6 +405,8 @@ export const ROAD_MODULE = {
   geoField: 'path',
   list: getRoads,
   create: createRoad,
+  update: updateRoad,
+  delete: deleteRoad,
   needsRayonContext: true,
   needsMahallaContext: true,
   fields: [

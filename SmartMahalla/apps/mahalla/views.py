@@ -1,8 +1,8 @@
 from rest_framework import generics
 from .models import Mahalla, AholiVaBandlik, InfratuzulmaTaxlili, Tadbirkorlar
 from .serializers import (
-    MahallaSerializer, AholiVaBandlikSerializer, InfratuzulmaTaxliliSerializer,
-    TadbirkorlarSerializer,
+    MahallaSerializer, MahallaUpdateSerializer, AholiVaBandlikSerializer,
+    InfratuzulmaTaxliliSerializer, TadbirkorlarSerializer,
 )
 
 
@@ -16,9 +16,13 @@ class MahallaListCreateAPIView(generics.ListCreateAPIView):
         return Mahalla.objects.all()
 
 
-class MahallaDetailAPIView(generics.RetrieveDestroyAPIView):
+class MahallaDetailAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Mahalla.objects.all()
-    serializer_class = MahallaSerializer
+
+    def get_serializer_class(self):
+        if self.request.method == 'GET':
+            return MahallaSerializer
+        return MahallaUpdateSerializer
 
 
 class InfratuzulmaTaxliliListCreateAPIView(generics.ListCreateAPIView):

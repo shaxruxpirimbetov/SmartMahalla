@@ -38,6 +38,16 @@ class MahallaSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+# PATCH-only shape for MahallaDetailAPIView (see apps/mahalla/views.py) - the
+# Admin edit form (GeoEntityAdminPage.jsx) only ever collects `name`/`rayon`,
+# never re-sends the drawn `plot` geometry, mirroring RayonUpdateSerializer's
+# same restriction in apps/rayon/serializers.py.
+class MahallaUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Mahalla
+        fields = ["name", "rayon"]
+
+
 class InfratuzulmaTaxliliSerializer(serializers.ModelSerializer):
     class Meta:
         model = InfratuzulmaTaxlili

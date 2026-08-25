@@ -136,6 +136,119 @@ $red: #dc2626;
   letter-spacing: 0.04em;
 }
 
+// ---- Split view saved-items list WITH a delete button per row -
+// EntityAdminPage.jsx (Business/Farmer/Road). Kept as its own class family
+// rather than reusing .geo-admin__list-item (a single <button> row in
+// GeoEntityAdminPage) since this row needs two independent click targets -
+// click the name to edit, click the trash icon to delete. ----------------
+
+.entity-admin__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+.entity-admin__list-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 8px;
+  border: 1px solid $gov-border;
+  background: #ffffff;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    border-color: rgba($gov-blue, 0.4);
+    background: $gov-blue-tint;
+  }
+}
+
+.entity-admin__list-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  color: $gov-text;
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+
+  &.is-selected {
+    color: $gov-blue;
+  }
+}
+
+.entity-admin__list-name-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.entity-admin__list-delete,
+.entity-admin__list-edit,
+.entity-admin__list-settings {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.entity-admin__list-delete {
+  margin-right: 8px;
+  color: $red;
+
+  &:hover:not(:disabled) {
+    background: rgba($red, 0.1);
+  }
+}
+
+.entity-admin__list-edit {
+  color: $gov-blue;
+
+  &:hover:not(:disabled) {
+    background: rgba($gov-blue, 0.1);
+  }
+}
+
+// Rayon/Mahalla's own name/rayon fields, distinct from
+// .entity-admin__list-edit (the stats "Kompleks Tahlil" data) - see
+// GeoEntityAdminPage.jsx - kept visually muted (gray, not blue) so it reads
+// as the secondary, less-common action.
+.entity-admin__list-settings {
+  margin-right: 2px;
+  color: $gov-text-dim;
+
+  &:hover:not(:disabled) {
+    background: rgba($gov-text-dim, 0.12);
+    color: $gov-text;
+  }
+}
+
 .admin-page .panel-notice {
   margin: 0;
   padding: 0 4px;

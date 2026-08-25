@@ -15,6 +15,7 @@ class AnalysAPIView(APIView):
         infra = InfratuzulmaTaxliliSerializer(InfratuzulmaTaxlili.objects.all(), many=True).data
         try:
             data = ai.ask_analysis(avb, infra).replace("```json", "").replace("```", "")
+            print("data: ", data)
             return Response({"data": json.loads(data), "images": ["media/img.png", "media/img_1.png", "media/img_2.png", "media/img_3.png"]})
         except ClientError as e:
             print("ClientError", e)

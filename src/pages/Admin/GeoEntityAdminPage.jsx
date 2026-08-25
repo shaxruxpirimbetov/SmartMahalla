@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, GeoJSON, FeatureGroup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import { Pencil, Settings2, Trash2 } from 'lucide-react';
 import GovPanel from '../../components/GovPanel';
 import { getRayons, fetchAllPages } from '../../services/api';
 import {
@@ -48,6 +49,15 @@ function GeoEntityAdminPage({ module, subtitle }) {
   const [statsSaving, setStatsSaving] = useState(false);
   const [statsError, setStatsError] = useState('');
 
+  // Edit/delete an existing item's own fields (name/rayon/...) - separate
+  // from both the draw-new-shape flow above and the statistics modal, since
+  // this never touches the geometry the item was originally drawn with. See
+  // EntityAdminPage.jsx for the same pattern applied to Business/Farmer/Road.
+  const [editingItem, setEditingItem] = useState(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState('');
+  const [deletingId, setDeletingId] = useState(null);
+
   const featureGroupRef = useRef(null);
 
   // Rayon is both a reference layer (drawing Mahalla boundaries inside a
@@ -93,6 +103,13 @@ function GeoEntityAdminPage({ module, subtitle }) {
   const ownFeatures = useMemo(() => toFeatures(items, module.geoField), [items, module]);
   const rayonOptions = useMemo(() => rayons.map((r) => ({ value: r.id, label: r.name })), [rayons]);
   const sortedItems = useMemo(() => [...items].sort(byNewest), [items]);
+
+  const editInitialValues = useMemo(() => {
+    if (!editingItem) return {};
+    return Object.fromEntries(
+      module.fields.map((f) => [f.name, editingItem[f.name] ?? f.default ?? ''])
+    );
+  }, [editingItem, module]);
 
   const handleCreated = useCallback(
     (e) => {
@@ -209,6 +226,62 @@ function GeoEntityAdminPage({ module, subtitle }) {
     }
   }
 
+  // ---- Edit/delete an existing item's own fields -------------------------
+
+  function openEdit(item) {
+    setEditError('');
+    setEditingItem(item);
+  }
+
+  function closeEdit() {
+    setEditingItem(null);
+    setEditError('');
+  }
+
+  async function handleEditSave(values) {
+    if (!editingItem || !module.update) return;
+    setEditSaving(true);
+    setEditError('');
+    try {
+      await module.update(editingItem.id, values);
+      setSuccessMsg(`${module.label} muvaffaqiyatli yangilandi.`);
+      setEditingItem(null);
+      window.setTimeout(() => setSuccessMsg(''), 4000);
+
+      try {
+        const { ownItems, rayonItems } = await loadItems();
+        setItems(ownItems);
+        setRayons(rayonItems);
+      } catch {
+        // The update itself already succeeded - a failed refresh just means
+        // the change won't show until the next reload.
+      }
+    } catch (err) {
+      setEditError(formatApiError(err));
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  async function handleDelete(item) {
+    if (!module.delete) return;
+    const confirmed = window.confirm(`Rostdan ham "${item.name}"ni oʻchirmoqchimisiz?`);
+    if (!confirmed) return;
+
+    setDeletingId(item.id);
+    setListError('');
+    try {
+      await module.delete(item.id);
+      setItems((prev) => prev.filter((i) => i.id !== item.id));
+      if (selectedItem?.id === item.id) setSelectedItem(null);
+      if (editingItem?.id === item.id) setEditingItem(null);
+    } catch (err) {
+      setListError(formatApiError(err));
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   return (
     <div className="admin-page">
       {listError && <p className="admin-page__error">{listError}</p>}
@@ -219,7 +292,9 @@ function GeoEntityAdminPage({ module, subtitle }) {
           {subtitle} Xaritada yuqori oʻng burchakdagi {GEOMETRY_LABEL[module.geometryType]} asbobi
           bilan chizing - shakl saqlanmaguncha havorang (#00e5ff) rangda koʻrinadi. Chizishni
           tugatgach, nomini kiriting va saqlang. Soʻng, oʻng tarafdagi roʻyxatdan shu obyektni
-          bosib, statistik maʼlumotlarni toʻldiring.
+          (yoki qalam belgisini) bosib, statistik maʼlumotlarni toʻldiring - xato kiritilgan
+          qiymatlarni ham shu yerdan qayta ochib tuzatishingiz mumkin. Nomi yoki rayonini
+          oʻzgartirish uchun ⚙ belgisini bosing.
         </p>
       </GovPanel>
 
@@ -281,12 +356,12 @@ function GeoEntityAdminPage({ module, subtitle }) {
               Hali hech narsa chizilmagan. Xaritada chizib, nomini kiriting.
             </p>
           ) : (
-            <ul className="geo-admin__list">
+            <ul className="entity-admin__list">
               {sortedItems.map((item) => (
-                <li key={item.id}>
+                <li key={item.id} className="entity-admin__list-item">
                   <button
                     type="button"
-                    className={`geo-admin__list-item ${
+                    className={`entity-admin__list-name ${
                       selectedItem?.id === item.id ? 'is-selected' : ''
                     }`}
                     onClick={() => openStats(item)}
@@ -296,9 +371,43 @@ function GeoEntityAdminPage({ module, subtitle }) {
                       style={{ background: module.color }}
                       aria-hidden="true"
                     />
-                    <span className="geo-admin__list-name">{item.name}</span>
+                    <span className="entity-admin__list-name-text">{item.name}</span>
                     {item._local && <span className="geo-admin__list-badge">mahalliy</span>}
                   </button>
+                  {module.stats && (
+                    <button
+                      type="button"
+                      className="entity-admin__list-edit"
+                      onClick={() => openStats(item)}
+                      aria-label={`${item.name} - maʼlumotlarni tahrirlash`}
+                      title="Maʼlumotlarni tahrirlash"
+                    >
+                      <Pencil size={16} strokeWidth={2} aria-hidden="true" />
+                    </button>
+                  )}
+                  {module.update && (
+                    <button
+                      type="button"
+                      className="entity-admin__list-settings"
+                      onClick={() => openEdit(item)}
+                      aria-label={`${item.name} - nomi/rayonini oʻzgartirish`}
+                      title="Nomi / rayonini oʻzgartirish"
+                    >
+                      <Settings2 size={16} strokeWidth={2} aria-hidden="true" />
+                    </button>
+                  )}
+                  {module.delete && (
+                    <button
+                      type="button"
+                      className="entity-admin__list-delete"
+                      onClick={() => handleDelete(item)}
+                      disabled={deletingId === item.id}
+                      aria-label={`${item.name} - oʻchirish`}
+                      title="Oʻchirish"
+                    >
+                      <Trash2 size={16} strokeWidth={2} aria-hidden="true" />
+                    </button>
+                  )}
                 </li>
               ))}
             </ul>
@@ -315,6 +424,22 @@ function GeoEntityAdminPage({ module, subtitle }) {
           error={formError}
           onCancel={discardPending}
           onSubmit={handleSaveShape}
+        />
+      )}
+
+      {editingItem && module.update && (
+        <FieldsFormModal
+          key={editingItem.id}
+          title={`${module.label} - nomi / rayonini oʻzgartirish`}
+          fields={module.fields}
+          rayonOptions={rayonOptions}
+          initialValues={editInitialValues}
+          saving={editSaving}
+          error={editError}
+          submitLabel="Saqlash"
+          cancelLabel="Bekor qilish"
+          onCancel={closeEdit}
+          onSubmit={handleEditSave}
         />
       )}
 

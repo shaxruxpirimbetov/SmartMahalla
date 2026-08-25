@@ -10,4 +10,4 @@ class RayonSerializer(serializers.ModelSerializer):
 class RayonUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rayon
-        fields = ["name"]
+        fields = ["name", "region"]

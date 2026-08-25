@@ -7,13 +7,10 @@ import {
 } from '../utils/auth';
 import { dataUrlToBlob } from '../utils/imageCompress';
 
-// TEMP: pointed at the local Django dev server (`python manage.py runserver`)
-// so the new migrations/routes (Business/Farmer/Road, the expanded AVB/Infra
-// fields) can be tested before they're deployed to production - see the
-// pending-deploy note from last session. Revert to the production URL below
-// once the live PythonAnywhere backend has the same code + migrations.
-// export const BASE_URL = 'https://sdatabase.pythonanywhere.com/api/';
 export const BASE_URL = 'https://sdatabase.pythonanywhere.com/api/';
+// Local dev: comment the line above and uncomment this one, then run
+// `python manage.py runserver` in SmartMahalla/ to test against it instead.
+// export const BASE_URL = 'http://127.0.0.1:8000/api/';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -140,6 +137,10 @@ export const deleteRayon = (id) => api.delete(`rayon/${id}/`);
 // params: { rayon }
 export const getMahallas = (params) => api.get('mahalla/', { params });
 export const createMahalla = (data) => api.post('mahalla/', data);
+// PATCH only sends { name, rayon } - MahallaDetailAPIView's update
+// serializer never accepts the drawn `plot` geometry back - see
+// apps/mahalla/serializers.py MahallaUpdateSerializer.
+export const updateMahalla = (id, data) => api.patch(`mahalla/${id}/`, data);
 export const deleteMahalla = (id) => api.delete(`mahalla/${id}/`);
 
 // ---- Aholi va Bandlik (AVB) ----
@@ -190,22 +191,34 @@ function toFormData(data, fileFields = []) {
 
 // ---- Business (Tadbirkorlar) ----
 // params: { mahalla }. Backend model: apps/mahalla/models.py Tadbirkorlar.
+// TadbirkorlarDetailAPIView is a RetrieveUpdateDestroyAPIView, so PATCH/DELETE
+// both work - see apps/mahalla/views.py.
 export const getBusinesses = (params) => api.get('mahalla/tadbirkorlar/', { params });
 export const createBusiness = (data) =>
   api.post('mahalla/tadbirkorlar/', toFormData(data, ['image']));
+// PATCH (not PUT) so the edit form - which only collects `module.fields`,
+// never the `location` geometry - can send a partial payload without the
+// backend rejecting it for missing required fields.
+export const updateBusiness = (id, data) =>
+  api.patch(`mahalla/tadbirkorlar/${id}/`, toFormData(data, ['image']));
 export const deleteBusiness = (id) => api.delete(`mahalla/tadbirkorlar/${id}/`);
 
 // ---- Farmer ----
 // params: { mahalla }. Backend model: apps/land/models.py Farmer.
+// FarmerDetailAPIView is a RetrieveUpdateDestroyAPIView - see apps/land/views.py.
 export const getFarmers = (params) => api.get('land/farmer/', { params });
 export const createFarmer = (data) => api.post('land/farmer/', toFormData(data, ['photo']));
+export const updateFarmer = (id, data) =>
+  api.patch(`land/farmer/${id}/`, toFormData(data, ['photo']));
 export const deleteFarmer = (id) => api.delete(`land/farmer/${id}/`);
 
 // ---- Road ----
 // params: { rayon }. Backend model: apps/land/models.py Road - no file
-// field, so this stays a plain JSON POST.
+// field, so this stays a plain JSON POST/PATCH.
+// RoadDetailAPIView is a RetrieveUpdateDestroyAPIView - see apps/land/views.py.
 export const getRoads = (params) => api.get('land/road/', { params });
 export const createRoad = (data) => api.post('land/road/', data);
+export const updateRoad = (id, data) => api.patch(`land/road/${id}/`, data);
 export const deleteRoad = (id) => api.delete(`land/road/${id}/`);
 
 // ---- AI Analysis ----
