@@ -7,7 +7,7 @@ if "db.sqlite3" in path:
 
 apps = ["apps/user", "rayon", "mahalla", "land"]
 
-for app in apps:
+for app in apps: # test
     path = os.listdir(app)
     if "migrations" in path:
         os.chdir(f"{app}/migrations/")
